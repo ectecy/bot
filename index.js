@@ -10,23 +10,34 @@ const client = new Client({
     ]
 });
 
-// cooldown (optional spam protection)
-const cooldown = new Map();
-
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
-
-    const now = Date.now();
-    const last = cooldown.get(message.author.id) || 0;
-
-    if (now - last < 1000) return;
-    cooldown.set(message.author.id, now);
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
 
     const user = message.mentions.users.first();
+    const member = message.mentions.members.first();
+
+    // ---------------- HELP / COMMANDS ----------------
+    if (cmd === "commands") {
+        return message.channel.send(
+`📜 **Commands List**
+\`,commands\` - shows this menu
+
+💖 Fun:
+\`,hug @user\`
+\`,kiss @user\`
+\`,slap @user\`
+\`,shoot @user\`
+
+🛡 Moderation:
+\`,kick @user\` (kick members)
+\`,ban @user\` (ban members)
+`
+        );
+    }
 
     // ---------------- HUG ----------------
     if (cmd === "hug") {
@@ -52,9 +63,35 @@ client.on("messageCreate", async (message) => {
         return message.channel.send(`🔫 ${message.author} shoots ${user}! *ouch*`);
     }
 
-    // ---------------- PING ----------------
+    // ---------------- KICK ----------------
+    if (cmd === "kick") {
+        if (!message.member.permissions.has("KickMembers")) {
+            return message.reply("❌ You don't have permission to kick members.");
+        }
+
+        if (!member) return message.reply("Mention someone to kick!");
+        if (!member.kickable) return message.reply("❌ I can't kick this user.");
+
+        await member.kick().catch(() => {});
+        return message.channel.send(`👢 Kicked ${member.user.tag}`);
+    }
+
+    // ---------------- BAN ----------------
+    if (cmd === "ban") {
+        if (!message.member.permissions.has("BanMembers")) {
+            return message.reply("❌ You don't have permission to ban members.");
+        }
+
+        if (!member) return message.reply("Mention someone to ban!");
+        if (!member.bannable) return message.reply("❌ I can't ban this user.");
+
+        await member.ban().catch(() => {});
+        return message.channel.send(`🔨 Banned ${member.user.tag}`);
+    }
+
+    // ---------------- PING (bonus) ----------------
     if (cmd === "ping") {
-        return message.reply("Pong!");
+        return message.reply("🏓 Pong!");
     }
 });
 
