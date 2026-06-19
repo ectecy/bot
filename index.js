@@ -9,7 +9,7 @@ const client = new Client({
         GatewayIntentBits.MessageContent
     ]
 });
-
+console.log("MESSAGE RECEIVED:", message.content);
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
