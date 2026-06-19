@@ -534,7 +534,7 @@ if (cmd === "hug") {
         return message.reply("❌ Mention someone to hug.");
     }
 
-    const gif = "https://tenor.com/view/cute-gif-14012726895332803373";
+    const gif = "https://tenor.com/view/anime-hug-love-smile-gif-15942846";
 
     return message.channel.send({
         content: `🤗 ${message.author} hugs ${member.user}`,
