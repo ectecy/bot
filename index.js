@@ -285,26 +285,32 @@ client.on("messageCreate", async (message) => {
             });
         }
 
-        /* ================= FUN ================= */
-
-        const targetText = user ? user.toString() : "someone";
+        /* =========================================================
+           💖 FIXED FUN COMMANDS (NOW REQUIRE MENTION)
+        ========================================================= */
 
         if (cmd === "hug") {
+            if (!user)
+                return message.reply("❌ You must mention someone to hug!");
+
             return message.channel.send({
                 embeds: [
                     new EmbedBuilder()
                         .setColor("Pink")
-                        .setDescription(`🤗 ${message.author} hugs ${targetText}`)
+                        .setDescription(`🤗 ${message.author} hugs ${user}`)
                 ]
             });
         }
 
         if (cmd === "kiss") {
+            if (!user)
+                return message.reply("❌ You must mention someone to kiss!");
+
             return message.channel.send({
                 embeds: [
                     new EmbedBuilder()
                         .setColor("Pink")
-                        .setDescription(`💋 ${message.author} kisses ${targetText}`)
+                        .setDescription(`💋 ${message.author} kisses ${user}`)
                 ]
             });
         }
@@ -314,7 +320,7 @@ client.on("messageCreate", async (message) => {
                 embeds: [
                     new EmbedBuilder()
                         .setColor("Yellow")
-                        .setDescription(`👋 ${message.author} slaps ${targetText}`)
+                        .setDescription(`👋 ${message.author} slaps ${user || "someone"}`)
                 ]
             });
         }
@@ -324,7 +330,7 @@ client.on("messageCreate", async (message) => {
                 embeds: [
                     new EmbedBuilder()
                         .setColor("DarkRed")
-                        .setDescription(`🔫 ${message.author} shoots ${targetText} 💥`)
+                        .setDescription(`🔫 ${message.author} shoots ${user || "someone"} 💥`)
                 ]
             });
         }
