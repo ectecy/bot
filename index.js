@@ -529,34 +529,27 @@ if (cmd === "unlock") {
 ================================================= */
 
 if (cmd === "hug") {
-    const gif = "https://media.tenor.com/4S2Yf5y0p1AAAAAC/hug-anime.gif";
 
-    const target = member || message.author;
+    if (!member) {
+        return message.reply("❌ Mention someone to hug.");
+    }
 
-    return message.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`🤗 ${message.author} hugs ${target}`)
-                .setImage(gif)
-        ]
-    });
+    return message.channel.send(
+        `🤗 ${message.author} hugs ${member.user}`
+    );
 }
+        
 if (cmd === "kiss") {
-    const gif = "https://media.tenor.com/3JZ6k2oQxqAAAAAC/anime-kiss.gif";
 
-    const target = member || message.author;
+    if (!member) {
+        return message.reply("❌ Mention someone to kiss.");
+    }
 
-    return message.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`💋 ${message.author} kisses ${target}`)
-                .setImage(gif)
-        ]
-    });
+    return message.channel.send(
+        `💋 ${message.author} kisses ${member.user}`
+    );
 }
-
+        
 if (cmd === "slap") {
     const gif = "https://media.tenor.com/1Qw8k9gH8oAAAAAC/slap-anime.gif";
 
@@ -570,6 +563,7 @@ if (cmd === "slap") {
     });
 }
 
+        
 if (cmd === "shoot") {
     const gif = "https://media.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif";
 
