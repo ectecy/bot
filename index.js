@@ -22,8 +22,8 @@ client.on("messageCreate", async (message) => {
 
     // ---------------- COMMANDS ----------------
     if (cmd === "commands") {
-        return message.channel.send(
-`📜 **Commands**
+    return message.channel.send(
+`📜 **Commands List**
 
 💖 Fun:
 ,hug @user
@@ -36,11 +36,13 @@ client.on("messageCreate", async (message) => {
 ,ban @user
 
 🎭 Roles:
-,r create RoleName
-`
-        );
-    }
+,r create RoleName  (creates a role)
 
+🏓 Utility:
+,ping
+`
+    );
+}
     // ---------------- FUN ----------------
     if (cmd === "hug") {
         if (!user) return message.reply("Mention someone!");
