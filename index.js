@@ -36,194 +36,210 @@ function getLevel(xp) {
 }
 
 function addXP(userId) {
-    db.xp[userId] = (db.xp[userId] || 0) + Math.floor(Math.random() * 11) + 5;
+    const gain = Math.floor(Math.random() * 11) + 5;
+
+    if (!db.xp[userId]) db.xp[userId] = 0;
+    db.xp[userId] += gain;
+
     saveDB();
 }
 
-// ---------------- COMMAND SYSTEM ----------------
-const commands = new Map();
-
-function add(name, fn) {
-    commands.set(name, fn);
-}
-
-/* =========================================================
-   💰 ECONOMY
-========================================================= */
-
-add("balance", (m) => {
-    return m.reply(`💰 $${db.economy[m.author.id] || 0}`);
+// ---------------- READY ----------------
+client.once("ready", () => {
+    console.log(`Logged in as ${client.user.tag}`);
 });
 
-add("work", (m) => {
-    const amount = Math.floor(Math.random() * 200) + 50;
-    db.economy[m.author.id] = (db.economy[m.author.id] || 0) + amount;
-    saveDB();
-    return m.reply(`💼 +$${amount}`);
-});
-
-add("pay", (m, args) => {
-    const user = m.mentions.users.first();
-    const amount = parseInt(args[1]);
-
-    if (!user || isNaN(amount)) return m.reply("Usage: ,pay @user amount");
-
-    db.economy[m.author.id] = (db.economy[m.author.id] || 0) - amount;
-    db.economy[user.id] = (db.economy[user.id] || 0) + amount;
-    saveDB();
-
-    return m.reply(`💸 Sent $${amount} to ${user.username}`);
-});
-
-/* =========================================================
-   📊 LEVELING
-========================================================= */
-
-add("rank", (m) => {
-    const xp = db.xp[m.author.id] || 0;
-    return m.reply(`📊 Level ${getLevel(xp)} | XP ${xp}`);
-});
-
-add("g.m", (m) => {
-    const top = Object.entries(db.xp)
-        .sort((a,b)=>b[1]-a[1])
-        .slice(0,10);
-
-    return m.channel.send(
-        "🏆 **LEADERBOARD**\n\n" +
-        top.map((u,i)=>`${i+1}. <@${u[0]}> — Level ${getLevel(u[1])}`).join("\n")
-    );
-});
-
-/* =========================================================
-   ⚠️ MODERATION
-========================================================= */
-
-add("warn", (m, args, member) => {
-    if (!m.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-        return m.reply("❌ No permission.");
-
-    if (!member) return m.reply("❌ Mention user.");
-
-    db.warns[member.id] = (db.warns[member.id] || 0) + 1;
-    saveDB();
-
-    const count = db.warns[member.id];
-
-    m.channel.send(`⚠️ ${member.user.tag} warned (${count}/4)`);
-
-    if (count >= 4 && member.bannable) {
-        member.ban({ reason: "4 warns" });
-        db.warns[member.id] = 0;
-        saveDB();
-    }
-});
-
-add("kick", async (m, args, member) => {
-    if (!m.member.permissions.has(PermissionsBitField.Flags.KickMembers))
-        return;
-
-    if (!member) return;
-
-    const target = await m.guild.members.fetch(member.id).catch(() => null);
-    if (!target || !target.kickable) return;
-
-    await target.kick();
-    return m.channel.send(`👢 Kicked ${target.user.tag}`);
-});
-
-add("ban", async (m, args, member) => {
-    if (!m.member.permissions.has(PermissionsBitField.Flags.BanMembers))
-        return;
-
-    if (!member) return;
-
-    const target = await m.guild.members.fetch(member.id).catch(() => null);
-    if (!target || !target.bannable) return;
-
-    await target.ban();
-    return m.channel.send(`🔨 Banned ${target.user.tag}`);
-});
-
-add("unban", async (m, args) => {
-    const id = args[0];
-    if (!id) return;
-
-    await m.guild.members.unban(id).catch(() => {});
-    return m.channel.send(`✅ Unbanned <@${id}>`);
-});
-
-/* =========================================================
-   🎮 GAMES
-========================================================= */
-
-add("coinflip", (m) => {
-    return m.channel.send(Math.random() < 0.5 ? "🪙 Heads" : "🪙 Tails");
-});
-
-add("roll", (m) => {
-    return m.channel.send(`🎲 ${Math.floor(Math.random()*100)+1}`);
-});
-
-add("8ball", (m) => {
-    const a = ["Yes","No","Maybe","Definitely","Ask again","No idea"];
-    return m.channel.send(`🎱 ${a[Math.floor(Math.random()*a.length)]}`);
-});
-
-/* =========================================================
-   💖 FUN
-========================================================= */
-
-add("hug", (m) => m.channel.send(`🤗 ${m.author} hugs someone`));
-add("kiss", (m) => m.channel.send(`💋 ${m.author} kisses someone`));
-add("slap", (m) => m.channel.send(`👋 ${m.author} slaps someone`));
-add("shoot", (m) => m.channel.send(`🔫 ${m.author} shoots someone 💥`));
-
-/* =========================================================
-   🎉 GIVEAWAY (BASIC)
-========================================================= */
-
-add("g.create", (m, args) => {
-    const prize = args.join(" ");
-    if (!prize) return m.reply("Usage: ,g.create prize");
-
-    m.channel.send(`🎉 Giveaway: **${prize}**`);
-
-    db.giveaways[m.id] = {
-        prize,
-        entries: []
-    };
-
-    saveDB();
-});
-
-add("g.reroll", (m, args) => {
-    const g = db.giveaways[args[0]];
-    if (!g || !g.entries.length) return m.reply("❌ No giveaway.");
-
-    const winner = g.entries[Math.floor(Math.random() * g.entries.length)];
-    m.channel.send(`🎉 Winner: <@${winner}>`);
-});
-
-/* =========================================================
-   ⚙️ COMMAND HANDLER
-========================================================= */
-
+// ---------------- MESSAGE ----------------
 client.on("messageCreate", async (message) => {
     if (message.author.bot || !message.guild) return;
     if (!message.content.startsWith(PREFIX)) return;
 
-    const args = message.content.slice(PREFIX).trim().split(/ +/);
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const cmd = (args.shift() || "").toLowerCase();
 
+    const user = message.mentions.users.first();
     const member = message.mentions.members.first();
 
     try {
+
+        // ---------------- XP GAIN ----------------
         addXP(message.author.id);
 
-        if (commands.has(cmd)) {
-            return commands.get(cmd)(message, args, member);
+        // ---------------- COMMANDS ----------------
+        if (cmd === "commands") {
+            return message.channel.send(
+`📜 **Commands**
+
+💰 Economy:
+,balance
+,work
+
+⚠️ Moderation:
+,warn
+,kick
+,ban
+,unban
+
+🎉 Giveaway:
+,g create
+,g reroll
+
+📊 Leveling:
+,rank
+,g.m
+
+💖 Fun:
+,hug
+,kiss
+,slap
+,shoot`
+            );
         }
+
+        // ---------------- RANK ----------------
+        if (cmd === "rank") {
+            const xp = db.xp[message.author.id] || 0;
+            const level = getLevel(xp);
+
+            return message.reply(`📊 Level: **${level}** | ⭐ XP: **${xp}**`);
+        }
+
+        // ---------------- LEADERBOARD ----------------
+        if (cmd === "g.m") {
+
+            const sorted = Object.entries(db.xp)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            if (!sorted.length) {
+                return message.channel.send("❌ No XP data yet.");
+            }
+
+            let msg = "🏆 **LEVEL LEADERBOARD**\n\n";
+
+            sorted.forEach((u, i) => {
+                const xp = u[1];
+                const level = getLevel(xp);
+
+                msg += `${i + 1}. <@${u[0]}> — Level ${level} (${xp} XP)\n`;
+            });
+
+            return message.channel.send(msg);
+        }
+
+        // ---------------- ECONOMY ----------------
+        if (cmd === "balance") {
+            return message.reply(`💰 $${db.economy[message.author.id] || 0}`);
+        }
+
+        if (cmd === "work") {
+            const amount = Math.floor(Math.random() * 200) + 50;
+
+            db.economy[message.author.id] =
+                (db.economy[message.author.id] || 0) + amount;
+
+            saveDB();
+
+            return message.reply(`💼 +$${amount}`);
+        }
+
+        // ---------------- WARN ----------------
+        if (cmd === "warn") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
+                return message.reply("❌ No permission.");
+            }
+
+            if (!member) return message.reply("❌ Mention someone.");
+
+            const reason = args.join(" ") || "No reason";
+
+            db.warns[member.id] = (db.warns[member.id] || 0) + 1;
+            saveDB();
+
+            const count = db.warns[member.id];
+
+            message.channel.send(`⚠️ ${member.user.tag} warned (${count}/4)\nReason: ${reason}`);
+
+            if (count >= 4) {
+                const target = await message.guild.members.fetch(member.id).catch(() => null);
+
+                if (target && target.bannable) {
+                    await target.ban({ reason: "4 warns" }).catch(() => {});
+                    db.warns[member.id] = 0;
+                    saveDB();
+                    message.channel.send(`🔨 Auto-banned ${member.user.tag}`);
+                }
+            }
+        }
+
+        // ---------------- MODERATION (FIXED) ----------------
+        if (cmd === "kick") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
+                return message.reply("❌ You don't have permission to kick members.");
+            }
+
+            if (!member) return message.reply("❌ Mention a user.");
+
+            const target = await message.guild.members.fetch(member.id).catch(() => null);
+            if (!target) return message.reply("❌ User not found in server.");
+
+            if (!target.kickable) {
+                return message.reply("❌ I cannot kick this user (role hierarchy).");
+            }
+
+            try {
+                await target.kick("Kicked via bot command");
+                return message.channel.send(`👢 Kicked **${target.user.tag}**`);
+            } catch (err) {
+                console.log(err);
+                return message.reply("❌ Failed to kick user.");
+            }
+        }
+
+        if (cmd === "ban") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+                return message.reply("❌ You don't have permission to ban members.");
+            }
+
+            if (!member) return message.reply("❌ Mention a user.");
+
+            const target = await message.guild.members.fetch(member.id).catch(() => null);
+            if (!target) return message.reply("❌ User not found in server.");
+
+            if (!target.bannable) {
+                return message.reply("❌ I cannot ban this user (role hierarchy).");
+            }
+
+            try {
+                await target.ban({ reason: "Banned via bot command" });
+                return message.channel.send(`🔨 Banned **${target.user.tag}**`);
+            } catch (err) {
+                console.log(err);
+                return message.reply("❌ Failed to ban user.");
+            }
+        }
+
+        if (cmd === "unban") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+                return message.reply("❌ No permission.");
+            }
+
+            const userId = args[0];
+            if (!userId) return message.reply("Usage: ,unban <userID>");
+
+            try {
+                await message.guild.members.unban(userId);
+                return message.channel.send(`✅ Unbanned <@${userId}>`);
+            } catch {
+                return message.reply("❌ Could not unban user.");
+            }
+        }
+
+        // ---------------- FUN ----------------
+        if (cmd === "hug") return message.channel.send(`🤗 ${message.author} hugs ${user || "someone"}`);
+        if (cmd === "kiss") return message.channel.send(`💋 ${message.author} kisses ${user || "someone"}`);
+        if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
+        if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
 
     } catch (err) {
         console.log(err);
