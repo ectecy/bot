@@ -15,7 +15,6 @@ let db = {
     giveaways: {}
 };
 
-// load saved data
 if (fs.existsSync("./data.json")) {
     db = JSON.parse(fs.readFileSync("./data.json", "utf8"));
 }
@@ -66,6 +65,7 @@ client.on("messageCreate", async (message) => {
 ,warn
 ,kick
 ,ban
+,unban
 
 🎉 Giveaway:
 ,g create
@@ -78,10 +78,9 @@ client.on("messageCreate", async (message) => {
             );
         }
 
-        // ---------------- ECONOMY (PERSISTENT) ----------------
+        // ---------------- ECONOMY ----------------
         if (cmd === "balance") {
-            const bal = db.economy[message.author.id] || 0;
-            return message.reply(`💰 $${bal}`);
+            return message.reply(`💰 $${db.economy[message.author.id] || 0}`);
         }
 
         if (cmd === "work") {
@@ -95,7 +94,7 @@ client.on("messageCreate", async (message) => {
             return message.reply(`💼 +$${amount}`);
         }
 
-        // ---------------- WARN SYSTEM (FIXED) ----------------
+        // ---------------- WARN ----------------
         if (cmd === "warn") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
                 return message.reply("❌ No permission.");
@@ -122,19 +121,40 @@ client.on("messageCreate", async (message) => {
             }
         }
 
-        // ---------------- MODERATION ----------------
+        // ---------------- KICK ----------------
         if (cmd === "kick") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
             if (!member) return;
+
             await member.kick().catch(() => {});
             return message.channel.send(`👢 Kicked ${member.user.tag}`);
         }
 
+        // ---------------- BAN ----------------
         if (cmd === "ban") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
             if (!member) return;
+
             await member.ban().catch(() => {});
             return message.channel.send(`🔨 Banned ${member.user.tag}`);
+        }
+
+        // ---------------- UNBAN (NEW ADDED) ----------------
+        if (cmd === "unban") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+                return message.reply("❌ No permission.");
+            }
+
+            const userId = args[0];
+            if (!userId) return message.reply("Usage: ,unban <userID>");
+
+            try {
+                await message.guild.members.unban(userId);
+                return message.channel.send(`✅ Unbanned <@${userId}>`);
+            } catch (err) {
+                console.log(err);
+                return message.reply("❌ Could not unban user.");
+            }
         }
 
         // ---------------- FUN ----------------
@@ -143,61 +163,12 @@ client.on("messageCreate", async (message) => {
         if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
         if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
 
-        // ---------------- GIVEAWAY (FIXED INPUT FORMAT) ----------------
+        // ---------------- GIVEAWAY ----------------
         if (cmd === "g") {
-
             if (args[0] === "create") {
-
                 await message.channel.send(
-`🎉 Setup Giveaway:
-
-Format:
-prize | duration | requirements
-
-Example:
-Nitro | 10m | none`
+`🎉 Giveaway setup coming next update`
                 );
-
-                const collected = await message.channel.awaitMessages({
-                    filter: m => m.author.id === message.author.id,
-                    max: 1,
-                    time: 60000
-                });
-
-                if (!collected.size) return message.reply("❌ Timed out.");
-
-                const input = collected.first().content.split("|").map(x => x.trim());
-
-                const prize = input[0];
-                const duration = input[1];
-                const req = input[2] || "none";
-
-                const ms = parseDuration(duration);
-                if (!ms) return message.reply("❌ Invalid duration");
-
-                const msg = await message.channel.send(
-`🎉 **GIVEAWAY**
-
-🎁 Prize: ${prize}
-📋 Req: ${req}
-⏱ Ends soon
-
-React 🎉 to join!`
-                );
-
-                await msg.react("🎉");
-
-                db.giveaways[msg.id] = {
-                    entries: []
-                };
-
-                saveDB();
-
-                setTimeout(() => {
-                    endGiveaway(msg.id, message.channel);
-                }, ms);
-
-                return;
             }
         }
 
@@ -205,52 +176,6 @@ React 🎉 to join!`
         console.log(err);
     }
 });
-
-// ---------------- REACTIONS ----------------
-client.on("messageReactionAdd", (reaction, user) => {
-    if (user.bot) return;
-
-    const g = db.giveaways[reaction.message.id];
-    if (!g) return;
-
-    if (reaction.emoji.name === "🎉") {
-        if (!g.entries.includes(user.id)) {
-            g.entries.push(user.id);
-            saveDB();
-        }
-    }
-});
-
-// ---------------- GIVEAWAY END ----------------
-function endGiveaway(id, channel) {
-    const g = db.giveaways[id];
-    if (!g) return;
-
-    if (!g.entries.length) {
-        return channel.send("❌ No entries.");
-    }
-
-    const winner = g.entries[Math.floor(Math.random() * g.entries.length)];
-
-    channel.send(`🎉 Winner: <@${winner}>`);
-
-    delete db.giveaways[id];
-    saveDB();
-}
-
-// ---------------- DURATION PARSER ----------------
-function parseDuration(str) {
-    if (!str) return null;
-
-    const m = str.match(/(\d+)(s|m|h)/);
-    if (!m) return null;
-
-    const n = parseInt(m[1]);
-
-    if (m[2] === "s") return n * 1000;
-    if (m[2] === "m") return n * 60000;
-    if (m[2] === "h") return n * 3600000;
-}
 
 // ---------------- LOGIN ----------------
 client.login(process.env.DISCORD_TOKEN);
