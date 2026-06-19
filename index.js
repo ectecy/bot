@@ -2,7 +2,7 @@ const {
     Client,
     GatewayIntentBits,
     PermissionsBitField,
-    EmbedBuilder
+    ChannelType
 } = require("discord.js");
 
 const fs = require("fs");
@@ -13,7 +13,8 @@ const PREFIX = ",";
 let db = {
     economy: {},
     warns: {},
-    xp: {}
+    xp: {},
+    giveaways: {}
 };
 
 if (fs.existsSync("./data.json")) {
@@ -30,35 +31,22 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessageReactions
     ]
 });
 
-// ---------------- CONFIG ----------------
-const COLORS = {
-    main: 0x5865F2,
-    success: 0x57F287,
-    danger: 0xED4245,
-    warn: 0xFEE75C,
-    info: 0x2F3136
-};
-
-// ---------------- XP SYSTEM ----------------
-function getLevel(xp) {
-    return Math.floor(Math.sqrt(xp / 100));
-}
-
-function addXP(userId) {
-    const gain = Math.floor(Math.random() * 11) + 5;
-    db.xp[userId] = (db.xp[userId] || 0) + gain;
+// ---------------- GIVEAWAYS ----------------
+function pickWinner(list) {
+    return list[Math.floor(Math.random() * list.length)];
 }
 
 // ---------------- READY ----------------
 client.once("ready", () => {
-    console.log(`[READY] Logged in as ${client.user.tag}`);
+    console.log(`Logged in as ${client.user.tag}`);
 });
 
-// ---------------- MESSAGE HANDLER ----------------
+// ---------------- MESSAGE ----------------
 client.on("messageCreate", async (message) => {
     if (!message.guild || message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
@@ -67,248 +55,157 @@ client.on("messageCreate", async (message) => {
     const cmd = (args.shift() || "").toLowerCase();
 
     const member = message.mentions.members.first();
-    const user = message.mentions.users.first();
-
-    addXP(message.author.id);
-    saveDB();
 
     try {
 
-        // ---------------- HELP ----------------
+        // ---------------- COMMANDS ----------------
         if (cmd === "commands") {
-            return message.channel.send({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor(COLORS.main)
-                        .setTitle("📘 Command Reference")
-                        .setDescription("Prefix: `,`")
-                        .addFields(
-                            {
-                                name: "💖 Fun",
-                                value: "`hug`, `kiss`, `slap`, `shoot`"
-                            },
-                            {
-                                name: "💰 Economy",
-                                value: "`balance`, `work`"
-                            },
-                            {
-                                name: "📊 Leveling",
-                                value: "`rank`, `g.m`"
-                            },
-                            {
-                                name: "🛡 Moderation",
-                                value: "`warn`, `kick`, `ban`, `unban`"
-                            },
-                            {
-                                name: "🎭 Roles",
-                                value: "`r create`, `r add`, `r remove`"
-                            }
-                        )
-                        .setFooter({ text: "Professional Bot System" })
-                ]
-            });
+            return message.channel.send(
+`📜 Commands:
+,r create <name>
+,r add @user <role>
+,r remove @user <role>
+
+🎉 Giveaway:
+g.create <prize>
+g.reroll <messageID>
+
+🛡 Moderation:
+,kick @user
+,ban @user`
+            );
         }
 
-        // ---------------- RANK ----------------
-        if (cmd === "rank") {
-            const xp = db.xp[message.author.id] || 0;
-            const level = getLevel(xp);
-
-            return message.reply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor(COLORS.main)
-                        .setTitle("📊 User Profile")
-                        .addFields(
-                            { name: "Level", value: `${level}`, inline: true },
-                            { name: "XP", value: `${xp}`, inline: true }
-                        )
-                ]
-            });
-        }
-
-        // ---------------- LEADERBOARD ----------------
-        if (cmd === "g.m") {
-            const sorted = Object.entries(db.xp)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 10);
-
-            return message.channel.send({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor(0xF1C40F)
-                        .setTitle("🏆 Global Leaderboard")
-                        .setDescription(
-                            sorted.length
-                                ? sorted.map((u, i) =>
-                                    `**${i + 1}.** <@${u[0]}> — Level ${getLevel(u[1])} (${u[1]} XP)`
-                                  ).join("\n")
-                                : "No data available."
-                        )
-                ]
-            });
-        }
-
-        // ---------------- ECONOMY ----------------
-        if (cmd === "balance") {
-            return message.reply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor(COLORS.success)
-                        .setTitle("💰 Wallet")
-                        .setDescription(`Balance: **$${db.economy[message.author.id] || 0}**`)
-                ]
-            });
-        }
-
-        if (cmd === "work") {
-            const amount = Math.floor(Math.random() * 200) + 50;
-
-            db.economy[message.author.id] =
-                (db.economy[message.author.id] || 0) + amount;
-
-            saveDB();
-
-            return message.reply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor(COLORS.success)
-                        .setDescription(`💼 Earned **$${amount}**`)
-                ]
-            });
-        }
-
-        // ---------------- WARN SYSTEM ----------------
-        if (cmd === "warn") {
-            if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-                return message.reply("❌ Missing permissions.");
-            }
-
-            if (!member) return message.reply("❌ Mention a user.");
-
-            db.warns[member.id] = (db.warns[member.id] || 0) + 1;
-            saveDB();
-
-            const count = db.warns[member.id];
-
-            message.channel.send({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor(COLORS.warn)
-                        .setTitle("⚠️ User Warned")
-                        .setDescription(`${member.user.tag} has been warned`)
-                        .addFields(
-                            { name: "Total Warnings", value: `${count}/4` }
-                        )
-                ]
-            });
-
-            if (count >= 4 && member.bannable) {
-                await member.ban({ reason: "4 warnings reached" });
-                db.warns[member.id] = 0;
-                saveDB();
-            }
-        }
-
-        // ---------------- MODERATION ----------------
-        if (cmd === "kick") {
-            if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
-            if (!member) return;
-
-            await member.kick();
-
-            return message.channel.send({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor(COLORS.danger)
-                        .setDescription(`👢 Kicked **${member.user.tag}**`)
-                ]
-            });
-        }
-
-        if (cmd === "ban") {
-            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
-            if (!member) return;
-
-            await member.ban();
-
-            return message.channel.send({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor(COLORS.danger)
-                        .setDescription(`🔨 Banned **${member.user.tag}**`)
-                ]
-            });
-        }
-
-        if (cmd === "unban") {
-            const id = args[0];
-            if (!id) return message.reply("Usage: ,unban <userID>");
-
-            try {
-                await message.guild.members.unban(id);
-
-                return message.channel.send({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor(COLORS.success)
-                            .setDescription(`✅ Unbanned <@${id}>`)
-                    ]
-                });
-            } catch {
-                return message.reply("❌ Failed to unban.");
-            }
-        }
-
-        // ---------------- FUN ----------------
-        if (cmd === "hug") return message.channel.send(`🤗 ${message.author} hugs ${user || "someone"}`);
-        if (cmd === "kiss") return message.channel.send(`💋 ${message.author} kisses ${user || "someone"}`);
-        if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
-        if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
-
-        // ---------------- ROLE SYSTEM ----------------
+        // ---------------- ROLE SYSTEM FIXED ----------------
         if (cmd === "r") {
 
             if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-                return message.reply("❌ Missing permissions.");
+                return message.reply("❌ Missing Manage Roles permission.");
             }
 
-            if (args[0] === "create") {
+            const sub = args[0];
+
+            // CREATE ROLE
+            if (sub === "create") {
                 const name = args.slice(1).join(" ");
+                if (!name) return message.reply("Usage: ,r create <name>");
+
                 const role = await message.guild.roles.create({ name });
-
-                return message.channel.send({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor(COLORS.success)
-                            .setDescription(`🎭 Created role **${role.name}**`)
-                    ]
-                });
+                return message.channel.send(`🎭 Created role **${role.name}**`);
             }
 
-            if (args[0] === "add") {
+            // ADD ROLE
+            if (sub === "add") {
+                const target = message.mentions.members.first();
                 const roleName = args.slice(2).join(" ");
+
                 const role = message.guild.roles.cache.find(r => r.name === roleName);
 
-                if (!member || !role) return message.reply("Invalid usage.");
+                if (!target || !role) {
+                    return message.reply("Usage: ,r add @user RoleName");
+                }
 
-                await member.roles.add(role);
-                return message.channel.send(`➕ Role assigned`);
+                await target.roles.add(role);
+                return message.channel.send(`➕ Added **${role.name}** to ${target.user.tag}`);
             }
 
-            if (args[0] === "remove") {
+            // REMOVE ROLE
+            if (sub === "remove") {
+                const target = message.mentions.members.first();
                 const roleName = args.slice(2).join(" ");
+
                 const role = message.guild.roles.cache.find(r => r.name === roleName);
 
-                if (!member || !role) return message.reply("Invalid usage.");
+                if (!target || !role) {
+                    return message.reply("Usage: ,r remove @user RoleName");
+                }
 
-                await member.roles.remove(role);
-                return message.channel.send(`➖ Role removed`);
+                await target.roles.remove(role);
+                return message.channel.send(`➖ Removed **${role.name}** from ${target.user.tag}`);
             }
         }
 
+        // ---------------- MODERATION FIXED ----------------
+        if (cmd === "kick") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
+                return message.reply("❌ No permission.");
+            }
+
+            if (!member) return message.reply("Mention a user.");
+
+            await member.kick().catch(() => {});
+            return message.channel.send(`👢 Kicked ${member.user.tag}`);
+        }
+
+        if (cmd === "ban") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+                return message.reply("❌ No permission.");
+            }
+
+            if (!member) return message.reply("Mention a user.");
+
+            await member.ban().catch(() => {});
+            return message.channel.send(`🔨 Banned ${member.user.tag}`);
+        }
+
+        // ---------------- GIVEAWAY CREATE FIXED ----------------
+        if (cmd === "g.create") {
+
+            const prize = args.join(" ");
+            if (!prize) return message.reply("Usage: g.create <prize>");
+
+            const msg = await message.channel.send(
+`🎉 GIVEAWAY
+
+🏆 Prize: **${prize}**
+React with 🎉 to enter!`
+            );
+
+            await msg.react("🎉");
+
+            db.giveaways[msg.id] = {
+                prize,
+                entries: []
+            };
+
+            saveDB();
+
+            return;
+        }
+
+        // ---------------- GIVEAWAY REROLL FIXED ----------------
+        if (cmd === "g.reroll") {
+
+            const id = args[0];
+            const g = db.giveaways[id];
+
+            if (!g || !g.entries.length) {
+                return message.reply("❌ No giveaway or no entries.");
+            }
+
+            const winner = pickWinner(g.entries);
+
+            return message.channel.send(`🎉 New Winner: <@${winner}>`);
+        }
+
     } catch (err) {
-        console.log("[ERROR]", err);
+        console.log(err);
+        message.reply("❌ Error occurred.");
+    }
+});
+
+// ---------------- GIVEAWAY ENTRY TRACKING ----------------
+client.on("messageReactionAdd", (reaction, user) => {
+    if (user.bot) return;
+
+    const g = db.giveaways[reaction.message.id];
+    if (!g) return;
+
+    if (reaction.emoji.name === "🎉") {
+        if (!g.entries.includes(user.id)) {
+            g.entries.push(user.id);
+            saveDB();
+        }
     }
 });
 
