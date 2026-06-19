@@ -534,7 +534,7 @@ if (cmd === "hug") {
         return message.reply("❌ Mention someone to hug.");
     }
 
-    const gif = "https://tenor.com/view/anime-hug-love-smile-gif-15942846";
+    const gif = "https://tenor.com/view/yukon-child-form-embracing-ulquiorra-gif-15599442819011505520";
 
     return message.channel.send({
         content: `🤗 ${message.author} hugs ${member.user}`,
@@ -550,37 +550,59 @@ if (cmd === "kiss") {
         return message.reply("❌ Mention someone to kiss.");
     }
 
-    return message.channel.send(
-        `💋 ${message.author} kisses ${member.user}`
-    );
-}
-        
-if (cmd === "slap") {
-    const gif = "https://media.tenor.com/1Qw8k9gH8oAAAAAC/slap-anime.gif";
+    const gif = "https://media.tenor.com/3JZ6k2oQxqAAAAAC/anime-kiss.gif";
 
     return message.channel.send({
+        content: `💋 ${message.author} kisses ${member.user}`,
         embeds: [
-            new EmbedBuilder()
-                .setColor("Yellow")
-                .setDescription(`👋 ${message.author} slaps ${user || "someone"}`)
-                .setImage(gif)
+            new EmbedBuilder().setImage(gif)
         ]
     });
 }
-
         
-if (cmd === "shoot") {
-    const gif = "https://media.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif";
+if (cmd === "slap") {
+
+    if (!member) {
+        return message.reply("❌ Mention someone to slap.");
+    }
+
+    const gifs = [
+        "https://tenor.com/view/girl-slap-anime-mad-student-gif-17423278",
+        "https://tenor.com/view/no-angry-anime-slap-gif-7355956"
+    ];
+
+    const gif = gifs[Math.floor(Math.random() * gifs.length)];
 
     const embed = new EmbedBuilder()
-        .setColor("DarkRed")
-        .setDescription(`🔫 ${message.author} shoots ${user || "someone"} 💥`)
-        .setImage(gif)
-        .setTimestamp();
+        .setColor("Yellow")
+        .setDescription(`👋 ${message.author} slaps ${member.user}`)
+        .setImage(gif);
 
     return message.channel.send({ embeds: [embed] });
 }
 
+        
+if (cmd === "shoot") {
+
+    if (!member) {
+        return message.reply("❌ Mention someone to shoot.");
+    }
+
+    const gifs = [
+        "https://tenor.com/view/cowboy-bebop-faye-valentine-faye-smg-machine-gun-gif-26549733",
+        "https://tenor.com/view/anime-gun-gunslinger-girl-henrietta-gif-13064976"
+    ];
+
+    const gif = gifs[Math.floor(Math.random() * gifs.length)];
+
+    const embed = new EmbedBuilder()
+        .setColor("DarkRed")
+        .setDescription(`🔫 ${message.author} shoots ${member.user} 💥`)
+        .setImage(gif);
+
+    return message.channel.send({ embeds: [embed] });
+}
+        
 /* =========================================================
    🔐 LOGIN
 ========================================================= */
