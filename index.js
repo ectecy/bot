@@ -6,9 +6,11 @@ const {
 
 const PREFIX = ",";
 
-// ---------------- ECONOMY STORAGE ----------------
+// ---------------- STORAGE ----------------
 const economy = new Map();
-const cooldowns = new Map();
+const warns = new Map();
+const spamCooldown = new Map();
+let logChannelId = null;
 
 const client = new Client({
     intents: [
@@ -23,23 +25,46 @@ client.once("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
 });
 
-// ---------------- MESSAGE HANDLER ----------------
+// ---------------- MESSAGE ----------------
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
-    if (!message.content.startsWith(PREFIX)) return;
+    if (!message.guild) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const cmd = (args.shift() || "").toLowerCase();
-
     const user = message.mentions.users.first();
     const member = message.mentions.members.first();
 
+    // MUST start with prefix
+    if (!message.content.startsWith(PREFIX)) return;
+
     try {
 
-        // ---------------- COMMANDS ----------------
+        // ---------------- AUTO MOD ----------------
+        const last = spamCooldown.get(message.author.id) || 0;
+        const now = Date.now();
+
+        if (now - last < 1500) {
+            return message.delete().catch(() => {});
+        }
+        spamCooldown.set(message.author.id, now);
+
+        if (message.content.includes("http")) {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+                await message.delete().catch(() => {});
+                return message.reply("🚫 Links not allowed.");
+            }
+        }
+
+        // ---------------- VERIFICATION GATE ----------------
+        if (!message.member.roles.cache.some(r => r.name === "Verified")) {
+            if (cmd !== "verify") return message.reply("🔒 You must verify first.");
+        }
+
+        // ---------------- COMMANDS MENU ----------------
         if (cmd === "commands") {
             return message.channel.send(
-`📜 **Commands**
+`📜 **Bot Commands**
 
 💖 Fun:
 ,hug @user
@@ -60,20 +85,34 @@ client.on("messageCreate", async (message) => {
 🛡 Moderation:
 ,kick @user
 ,ban @user
+,warn @user
 
 🎭 Roles:
 ,r create RoleName
-,r add @user RoleName
-,r remove @user RoleName
 
-🏓 Utility:
-,ping`
+🔐 System:
+,verify
+,setlog`
             );
         }
 
-        // ---------------- PING ----------------
-        if (cmd === "ping") {
-            return message.reply("🏓 Pong!");
+        // ---------------- VERIFY ----------------
+        if (cmd === "verify") {
+            const role = message.guild.roles.cache.find(r => r.name === "Verified");
+            if (!role) return message.reply("No Verified role found.");
+
+            await message.member.roles.add(role);
+            return message.reply("✅ Verified!");
+        }
+
+        // ---------------- LOG CHANNEL ----------------
+        if (cmd === "setlog") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                return message.reply("❌ No permission.");
+            }
+
+            logChannelId = message.channel.id;
+            return message.reply("📋 Log channel set.");
         }
 
         // ---------------- FUN ----------------
@@ -88,108 +127,94 @@ client.on("messageCreate", async (message) => {
         }
 
         if (cmd === "roll") {
-            return message.channel.send(`🎲 You rolled ${Math.floor(Math.random() * 100) + 1}`);
+            return message.channel.send(`🎲 ${Math.floor(Math.random() * 100) + 1}`);
         }
 
         if (cmd === "8ball") {
-            const answers = ["Yes", "No", "Maybe", "Definitely", "Ask again", "Absolutely not"];
-            return message.channel.send(`🎱 ${answers[Math.floor(Math.random() * answers.length)]}`);
+            const a = ["Yes", "No", "Maybe", "Definitely", "Ask again", "Nope"];
+            return message.channel.send(`🎱 ${a[Math.floor(Math.random() * a.length)]}`);
         }
 
         // ---------------- ECONOMY ----------------
         if (cmd === "balance") {
-            const bal = economy.get(message.author.id) || 0;
-            return message.reply(`💰 Balance: $${bal}`);
+            return message.reply(`💰 $${economy.get(message.author.id) || 0}`);
         }
 
         if (cmd === "work") {
-            const amount = Math.floor(Math.random() * 200) + 50;
-            economy.set(message.author.id, (economy.get(message.author.id) || 0) + amount);
-            return message.reply(`💼 You worked and earned $${amount}`);
+            const amt = Math.floor(Math.random() * 200) + 50;
+            economy.set(message.author.id, (economy.get(message.author.id) || 0) + amt);
+            return message.reply(`💼 +$${amt}`);
         }
 
         if (cmd === "daily") {
-            const last = cooldowns.get(message.author.id) || 0;
-            const now = Date.now();
+            const last = warns.get(message.author.id + "_daily") || 0;
+            if (Date.now() - last < 86400000) return message.reply("⏳ Already claimed.");
 
-            if (now - last < 86400000) {
-                return message.reply("⏳ You already claimed daily today!");
-            }
+            economy.set(message.author.id, (economy.get(message.author.id) || 0) + 500);
+            warns.set(message.author.id + "_daily", Date.now());
 
-            const reward = 500;
-            economy.set(message.author.id, (economy.get(message.author.id) || 0) + reward);
-            cooldowns.set(message.author.id, now);
-
-            return message.reply(`🎁 Daily claimed: $${reward}`);
+            return message.reply("🎁 +$500 daily reward");
         }
 
-        // ---------------- MODERATION ----------------
+        // ---------------- WARN SYSTEM ----------------
+        if (cmd === "warn") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
+                return message.reply("❌ No permission.");
+            }
+
+            if (!member) return message.reply("Mention someone.");
+
+            const id = member.id;
+            const count = (warns.get(id) || 0) + 1;
+            warns.set(id, count);
+
+            message.channel.send(`⚠️ ${member.user.tag} warned (${count}/3)`);
+
+            if (count >= 3) {
+                await member.ban({ reason: "3 warnings" });
+                warns.delete(id);
+                message.channel.send(`🔨 Auto-banned ${member.user.tag}`);
+            }
+        }
+
+        // ---------------- KICK ----------------
         if (cmd === "kick") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
                 return message.reply("❌ No permission.");
             }
 
             if (!member) return message.reply("Mention someone.");
-            if (!member.kickable) return message.reply("❌ I can't kick this user.");
-
             await member.kick();
             return message.channel.send(`👢 Kicked ${member.user.tag}`);
         }
 
+        // ---------------- BAN ----------------
         if (cmd === "ban") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
                 return message.reply("❌ No permission.");
             }
 
             if (!member) return message.reply("Mention someone.");
-            if (!member.bannable) return message.reply("❌ I can't ban this user.");
-
             await member.ban();
             return message.channel.send(`🔨 Banned ${member.user.tag}`);
         }
 
         // ---------------- ROLE SYSTEM ----------------
         if (cmd === "r") {
-
             if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
                 return message.reply("❌ No permission.");
             }
 
-            // CREATE ROLE
             if (args[0] === "create") {
-                const roleName = args.slice(1).join(" ");
-                if (!roleName) return message.reply("Usage: ,r create RoleName");
-
-                const role = await message.guild.roles.create({ name: roleName });
-                return message.channel.send(`🎭 Created role: ${role.name}`);
-            }
-
-            // ADD ROLE
-            if (args[0] === "add") {
-                const roleName = args.slice(2).join(" ");
-                const role = message.guild.roles.cache.find(r => r.name === roleName);
-
-                if (!member || !role) return message.reply("Usage: ,r add @user RoleName");
-
-                await member.roles.add(role);
-                return message.channel.send(`➕ Added ${role.name} to ${member.user.tag}`);
-            }
-
-            // REMOVE ROLE
-            if (args[0] === "remove") {
-                const roleName = args.slice(2).join(" ");
-                const role = message.guild.roles.cache.find(r => r.name === roleName);
-
-                if (!member || !role) return message.reply("Usage: ,r remove @user RoleName");
-
-                await member.roles.remove(role);
-                return message.channel.send(`➖ Removed ${role.name} from ${member.user.tag}`);
+                const name = args.slice(1).join(" ");
+                const role = await message.guild.roles.create({ name });
+                return message.channel.send(`🎭 Created role ${role.name}`);
             }
         }
 
     } catch (err) {
         console.log(err);
-        message.reply("❌ Something went wrong.");
+        message.reply("❌ Error occurred.");
     }
 });
 
