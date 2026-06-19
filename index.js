@@ -529,55 +529,51 @@ if (cmd === "unlock") {
 ================================================= */
 
 if (cmd === "hug") {
-
-    const gif = await getGif("anime hug cuddle");
+    const gif = "https://media.tenor.com/4S2Yf5y0p1AAAAAC/hug-anime.gif";
 
     return message.channel.send({
         embeds: [
             new EmbedBuilder()
                 .setColor("Pink")
                 .setDescription(`🤗 ${message.author} hugs ${user || "someone"}`)
-                .setImage(gif || null)
+                .setImage(gif)
         ]
     });
 }
 
 if (cmd === "kiss") {
-
-    const gif = await getGif("anime kiss");
+    const gif = "https://media.tenor.com/3JZ6k2oQxqAAAAAC/anime-kiss.gif";
 
     return message.channel.send({
         embeds: [
             new EmbedBuilder()
                 .setColor("Pink")
                 .setDescription(`💋 ${message.author} kisses ${user || "someone"}`)
-                .setImage(gif || null)
+                .setImage(gif)
         ]
     });
 }
 
 if (cmd === "slap") {
-
-    const gif = await getGif("anime slap");
+    const gif = "https://media.tenor.com/1Qw8k9gH8oAAAAAC/slap-anime.gif";
 
     return message.channel.send({
         embeds: [
             new EmbedBuilder()
                 .setColor("Yellow")
                 .setDescription(`👋 ${message.author} slaps ${user || "someone"}`)
-                .setImage(gif || null)
+                .setImage(gif)
         ]
     });
 }
-        
-if (cmd === "shoot") {
 
-    const gif = await getGif("anime gun shoot");
+if (cmd === "shoot") {
+    const gif = "https://media.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif";
 
     const embed = new EmbedBuilder()
         .setColor("DarkRed")
         .setDescription(`🔫 ${message.author} shoots ${user || "someone"} 💥`)
-        .setImage(gif || null)
+        .setImage(gif)
         .setTimestamp();
 
     return message.channel.send({ embeds: [embed] });
