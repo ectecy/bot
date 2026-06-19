@@ -533,46 +533,57 @@ client.on("messageCreate", async (message) => {
             }
         }
 
-        /* =================================================
-           💖 FUN COMMANDS
-        ================================================= */
+       /* =================================================
+   💖 FUN COMMANDS (WITH GIFS)
+================================================= */
 
-        if (cmd === "hug") {
-            const embed = new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`🤗 ${message.author} hugs ${user || "someone"}`);
+if (cmd === "hug") {
 
-            return message.channel.send({ embeds: [embed] });
-        }
+    const gif = "https://media.tenor.com/4S2Yf5y0p1AAAAAC/hug-anime.gif";
 
-        if (cmd === "kiss") {
-            const embed = new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`💋 ${message.author} kisses ${user || "someone"}`);
+    const embed = new EmbedBuilder()
+        .setColor("Pink")
+        .setDescription(`🤗 ${message.author} hugs ${user || "someone"}`)
+        .setImage(gif);
 
-            return message.channel.send({ embeds: [embed] });
-        }
+    return message.channel.send({ embeds: [embed] });
+}
 
-        if (cmd === "slap") {
-            const embed = new EmbedBuilder()
-                .setColor("Yellow")
-                .setDescription(`👋 ${message.author} slaps ${user || "someone"}`);
+if (cmd === "kiss") {
 
-            return message.channel.send({ embeds: [embed] });
-        }
+    const gif = "https://media.tenor.com/3JZ6k2oQxqAAAAAC/anime-kiss.gif";
 
-        if (cmd === "shoot") {
-            const embed = new EmbedBuilder()
-                .setColor("DarkRed")
-                .setDescription(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
+    const embed = new EmbedBuilder()
+        .setColor("Pink")
+        .setDescription(`💋 ${message.author} kisses ${user || "someone"}`)
+        .setImage(gif);
 
-            return message.channel.send({ embeds: [embed] });
-        }
+    return message.channel.send({ embeds: [embed] });
+}
 
-    } catch (err) {
-        console.log(err);
-    }
-});
+if (cmd === "slap") {
+
+    const gif = "https://media.tenor.com/1Qw8k9gH8oAAAAAC/slap-anime.gif";
+
+    const embed = new EmbedBuilder()
+        .setColor("Yellow")
+        .setDescription(`👋 ${message.author} slaps ${user || "someone"}`)
+        .setImage(gif);
+
+    return message.channel.send({ embeds: [embed] });
+}
+
+if (cmd === "shoot") {
+
+    const gif = "https://media.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif";
+
+    const embed = new EmbedBuilder()
+        .setColor("DarkRed")
+        .setDescription(`🔫 ${message.author} shoots ${user || "someone"} 💥`)
+        .setImage(gif);
+
+    return message.channel.send({ embeds: [embed] });
+}
 
 /* =========================================================
    🔐 LOGIN
