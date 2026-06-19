@@ -7,7 +7,9 @@ const client = new Client({
         GatewayIntentBits.MessageContent
     ]
 });
-
+client.on("messageCreate", (message) => {
+    console.log("GOT:", message.content);
+});
 const cooldown = new Map();
 
 client.on("messageCreate", async (message) => {
