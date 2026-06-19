@@ -117,19 +117,26 @@ client.on("messageCreate", async (message) => {
             );
         }
 
-        /* ================= GIVEAWAYS (FIXED) ================= */
+        /* ================= GIVEAWAYS (UPDATED) ================= */
         if (cmd === "g") {
             const sub = args[0];
 
-            // CREATE GIVEAWAY
+            /* ---------- CREATE GIVEAWAY ---------- */
             if (sub === "create") {
-                const prize = args.slice(1).join(" ");
-                if (!prize) return message.reply("❌ Usage: ,g create <prize>");
+                const prize = args[1];
+                const duration = args[2];
+                const requirement = args.slice(3).join(" ") || "none";
+
+                if (!prize || !duration) {
+                    return message.reply("❌ Usage: ,g create <prize> <duration(ms)> <requirement|none>");
+                }
 
                 const msg = await message.channel.send(
-`🎉 **GIVEAWAY**
+`🎉 **GIVEAWAY STARTED**
 
 🎁 Prize: **${prize}**
+⏱ Duration: **${duration}ms**
+🔒 Requirement: **${requirement}**
 👤 Hosted by: ${message.author}
 
 React with 🎉 to enter!`
@@ -139,34 +146,58 @@ React with 🎉 to enter!`
 
                 db.giveaways[msg.id] = {
                     prize,
+                    duration: Number(duration),
+                    requirement,
                     entries: []
                 };
 
                 saveDB();
+
+                /* ---------- AUTO END ---------- */
+                setTimeout(() => {
+                    const giveaway = db.giveaways[msg.id];
+                    if (!giveaway) return;
+
+                    const entries = giveaway.entries;
+
+                    if (!entries || entries.length === 0) {
+                        message.channel.send("❌ Giveaway ended — no entries.");
+                        delete db.giveaways[msg.id];
+                        saveDB();
+                        return;
+                    }
+
+                    const winner = entries[Math.floor(Math.random() * entries.length)];
+
+                    message.channel.send(
+`🎉 **GIVEAWAY ENDED**
+🏆 Winner: <@${winner}>
+🎁 Prize: **${prize}**`
+                    );
+
+                    delete db.giveaways[msg.id];
+                    saveDB();
+
+                }, Number(duration));
+
                 return;
             }
 
-            // REROLL GIVEAWAY
+            /* ---------- REROLL ---------- */
             if (sub === "reroll") {
                 const msgId = args[1];
-                if (!msgId) return message.reply("❌ Usage: ,g reroll <messageID>");
-
                 const giveaway = db.giveaways[msgId];
+
                 if (!giveaway) return message.reply("❌ Giveaway not found.");
+                if (!giveaway.entries.length) return message.reply("❌ No entries.");
 
-                const entries = giveaway.entries;
-
-                if (!entries || entries.length === 0) {
-                    return message.reply("❌ No entries found.");
-                }
-
-                const winner = entries[Math.floor(Math.random() * entries.length)];
+                const winner = giveaway.entries[Math.floor(Math.random() * giveaway.entries.length)];
 
                 return message.channel.send(`🎉 New winner: <@${winner}>`);
             }
         }
 
-        /* ================= GIVEAWAY TRACKING ================= */
+        /* ================= GIVEAWAY ENTRY TRACKING ================= */
         client.on("messageReactionAdd", (reaction, user) => {
             if (user.bot) return;
 
@@ -181,14 +212,14 @@ React with 🎉 to enter!`
             }
         });
 
-        /* ================= OTHER COMMANDS ================= */
-
+        /* ================= RANK ================= */
         if (cmd === "rank") {
             const xp = db.xp[message.author.id] || 0;
             const level = getLevel(xp);
             return message.reply(`📊 Level: **${level}** | ⭐ XP: **${xp}**`);
         }
 
+        /* ================= LEADERBOARD ================= */
         if (cmd === "g.m") {
             const sorted = Object.entries(db.xp)
                 .sort((a, b) => b[1] - a[1])
@@ -207,6 +238,7 @@ React with 🎉 to enter!`
             return message.channel.send(msg);
         }
 
+        /* ================= ECONOMY ================= */
         if (cmd === "balance") {
             return message.reply(`💰 $${db.economy[message.author.id] || 0}`);
         }
@@ -222,6 +254,7 @@ React with 🎉 to enter!`
             return message.reply(`💼 +$${amount}`);
         }
 
+        /* ================= MODERATION ================= */
         if (cmd === "warn") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
                 return message.reply("❌ No permission.");
@@ -234,36 +267,40 @@ React with 🎉 to enter!`
             db.warns[member.id] = (db.warns[member.id] || 0) + 1;
             saveDB();
 
-            const count = db.warns[member.id];
+            message.channel.send(`⚠️ ${member.user.tag} warned`);
 
-            message.channel.send(
-                `⚠️ ${member.user.tag} warned (${count}/4)\nReason: ${reason}`
-            );
+            return;
         }
 
         if (cmd === "kick") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
+
             const target = await message.guild.members.fetch(member.id).catch(() => null);
             if (!target) return;
+
             await target.kick();
             return message.channel.send(`👢 Kicked **${target.user.tag}**`);
         }
 
         if (cmd === "ban") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
+
             const target = await message.guild.members.fetch(member.id).catch(() => null);
             if (!target) return;
+
             await target.ban();
             return message.channel.send(`🔨 Banned **${target.user.tag}**`);
         }
 
         if (cmd === "unban") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
+
             const userId = args[0];
             await message.guild.members.unban(userId);
             return message.channel.send(`✅ Unbanned <@${userId}>`);
         }
 
+        /* ================= FUN ================= */
         if (cmd === "hug") return message.channel.send(`🤗 ${message.author} hugs ${user || "someone"}`);
         if (cmd === "kiss") return message.channel.send(`💋 ${message.author} kisses ${user || "someone"}`);
         if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
