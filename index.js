@@ -566,21 +566,12 @@ if (cmd === "slap") {
 
 if (cmd === "shoot") {
 
-    const shootGIFs = [
-        "https://media.tenor.com/2roX3uxz_68AAAAC/anime-gun.gif",
-        "https://media.tenor.com/1Qw8k9gH8oAAAAAC/slap-anime.gif",
-        "https://media.tenor.com/9Y1b3KQvQ5MAAAAC/anime-shoot.gif",
-        "https://media.tenor.com/W3KQv6GgQxEAAAAC/gun-point-anime.gif",
-        "https://media.tenor.com/0Gf3dKxqv7MAAAAC/anime-gun-point.gif"
-    ];
-
-    const gif = shootGIFs[Math.floor(Math.random() * shootGIFs.length)];
-
-    const target = user ? user : "someone";
+    const gif =
+        "https://c.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif";
 
     const embed = new EmbedBuilder()
         .setColor("DarkRed")
-        .setDescription(`🔫 ${message.author} shoots ${target} 💥`)
+        .setDescription(`🔫 ${message.author} shoots ${user || "someone"} 💥`)
         .setImage(gif)
         .setTimestamp();
 
