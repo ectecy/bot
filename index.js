@@ -33,8 +33,11 @@ client.on("messageCreate", async (message) => {
 \`,shoot @user\`
 
 🛡 Moderation:
-\`,kick @user\` (kick members)
-\`,ban @user\` (ban members)
+\`,kick @user\`
+\`,ban @user\`
+
+🎭 Roles:
+\`,r create roleName\`
 `
         );
     }
@@ -89,7 +92,26 @@ client.on("messageCreate", async (message) => {
         return message.channel.send(`🔨 Banned ${member.user.tag}`);
     }
 
-    // ---------------- PING (bonus) ----------------
+    // ---------------- ROLE CREATE ----------------
+    if (cmd === "r") {
+        if (!message.member.permissions.has("ManageRoles")) {
+            return message.reply("❌ You don't have permission to manage roles.");
+        }
+
+        if (args[0] === "create") {
+            const roleName = args.slice(1).join(" ");
+            if (!roleName) return message.reply("❌ Provide a role name.");
+
+            await message.guild.roles.create({
+                name: roleName,
+                reason: `Created by ${message.author.tag}`
+            });
+
+            return message.channel.send(`🎭 Created role: **${roleName}**`);
+        }
+    }
+
+    // ---------------- PING ----------------
     if (cmd === "ping") {
         return message.reply("🏓 Pong!");
     }
