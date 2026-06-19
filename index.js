@@ -15,15 +15,15 @@ client.on("messageCreate", async (message) => {
     if (!message.content.startsWith(PREFIX)) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
-    const cmd = args.shift().toLowerCase();
+    const cmd = (args.shift() || "").toLowerCase();
 
     const user = message.mentions.users.first();
     const member = message.mentions.members.first();
 
     // ---------------- COMMANDS ----------------
     if (cmd === "commands") {
-    return message.channel.send(
-`📜 **Commands List**
+        return message.channel.send(
+`📜 **Commands**
 
 💖 Fun:
 ,hug @user
@@ -36,13 +36,18 @@ client.on("messageCreate", async (message) => {
 ,ban @user
 
 🎭 Roles:
-,r create RoleName  (creates a role)
+,r create RoleName
 
 🏓 Utility:
-,ping
-`
-    );
-}
+,ping`
+        );
+    }
+
+    // ---------------- PING ----------------
+    if (cmd === "ping") {
+        return message.reply("🏓 Pong!");
+    }
+
     // ---------------- FUN ----------------
     if (cmd === "hug") {
         if (!user) return message.reply("Mention someone!");
@@ -100,7 +105,7 @@ client.on("messageCreate", async (message) => {
         }
     }
 
-    // ---------------- ROLE CREATE ----------------
+    // ---------------- ROLE SYSTEM ----------------
     if (cmd === "r") {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
             return message.reply("❌ You need Manage Roles permission.");
@@ -125,11 +130,6 @@ client.on("messageCreate", async (message) => {
                 return message.reply("❌ Failed to create role (check bot permissions + role hierarchy).");
             }
         }
-    }
-
-    // ---------------- PING ----------------
-    if (cmd === "ping") {
-        return message.reply("🏓 Pong!");
     }
 });
 
