@@ -1,4 +1,8 @@
-const { Client, GatewayIntentBits, PermissionsBitField } = require("discord.js");
+const {
+    Client,
+    GatewayIntentBits,
+    PermissionsBitField
+} = require("discord.js");
 
 const PREFIX = ",";
 
@@ -6,14 +10,17 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
     ]
 });
 
+// ---------------- READY ----------------
 client.once("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
 });
 
+// ---------------- MESSAGE HANDLER ----------------
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
@@ -24,9 +31,11 @@ client.on("messageCreate", async (message) => {
     const user = message.mentions.users.first();
     const member = message.mentions.members.first();
 
-    // ---------------- COMMANDS ----------------
-    if (cmd === "commands") {
-        return message.channel.send(
+    try {
+
+        // ---------------- HELP ----------------
+        if (cmd === "commands") {
+            return message.channel.send(
 `📜 **Commands**
 
 💖 Fun:
@@ -35,106 +44,126 @@ client.on("messageCreate", async (message) => {
 ,slap @user
 ,shoot @user
 
+🎲 Games:
+,coinflip
+,roll
+,8ball
+
+💰 Economy:
+,balance (fake system)
+
 🛡 Moderation:
 ,kick @user
 ,ban @user
 
 🎭 Roles:
-,r create RoleName
+,r create Name
+,r add @user RoleName
+,r remove @user RoleName
 
 🏓 Utility:
 ,ping`
-        );
-    }
-
-    // ---------------- PING ----------------
-    if (cmd === "ping") {
-        return message.reply("🏓 Pong!");
-    }
-
-    // ---------------- FUN ----------------
-    if (cmd === "hug") {
-        if (!user) return message.reply("Mention someone!");
-        return message.channel.send(`🤗 ${message.author} hugs ${user}`);
-    }
-
-    if (cmd === "kiss") {
-        if (!user) return message.reply("Mention someone!");
-        return message.channel.send(`💋 ${message.author} kisses ${user}`);
-    }
-
-    if (cmd === "slap") {
-        if (!user) return message.reply("Mention someone!");
-        return message.channel.send(`👋 ${message.author} slaps ${user}`);
-    }
-
-    if (cmd === "shoot") {
-        if (!user) return message.reply("Mention someone!");
-        return message.channel.send(`🔫 ${message.author} shoots ${user} 💥`);
-    }
-
-    // ---------------- KICK ----------------
-    if (cmd === "kick") {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
-            return message.reply("❌ No permission.");
+            );
         }
 
-        if (!member) return message.reply("Mention someone.");
-        if (!member.kickable) return message.reply("❌ I can't kick this user.");
+        // ---------------- PING ----------------
+        if (cmd === "ping") {
+            return message.reply("🏓 Pong!");
+        }
 
-        try {
+        // ---------------- FUN ----------------
+        if (cmd === "hug") return message.channel.send(`🤗 ${message.author} hugs ${user || "someone"}`);
+        if (cmd === "kiss") return message.channel.send(`💋 ${message.author} kisses ${user || "someone"}`);
+        if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
+        if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
+
+        // ---------------- GAMES ----------------
+        if (cmd === "coinflip") {
+            return message.channel.send(Math.random() < 0.5 ? "🪙 Heads" : "🪙 Tails");
+        }
+
+        if (cmd === "roll") {
+            return message.channel.send(`🎲 You rolled: ${Math.floor(Math.random() * 100) + 1}`);
+        }
+
+        if (cmd === "8ball") {
+            const answers = ["Yes", "No", "Maybe", "Definitely", "Ask again", "Absolutely not"];
+            return message.channel.send(`🎱 ${answers[Math.floor(Math.random() * answers.length)]}`);
+        }
+
+        // ---------------- KICK ----------------
+        if (cmd === "kick") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
+                return message.reply("❌ No permission.");
+            }
+
+            if (!member) return message.reply("Mention someone.");
+            if (!member.kickable) return message.reply("❌ I can't kick this user.");
+
             await member.kick();
             return message.channel.send(`👢 Kicked ${member.user.tag}`);
-        } catch (err) {
-            console.log(err);
-            return message.reply("❌ Failed to kick.");
-        }
-    }
-
-    // ---------------- BAN ----------------
-    if (cmd === "ban") {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-            return message.reply("❌ No permission.");
         }
 
-        if (!member) return message.reply("Mention someone.");
-        if (!member.bannable) return message.reply("❌ I can't ban this user.");
+        // ---------------- BAN ----------------
+        if (cmd === "ban") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+                return message.reply("❌ No permission.");
+            }
 
-        try {
+            if (!member) return message.reply("Mention someone.");
+            if (!member.bannable) return message.reply("❌ I can't ban this user.");
+
             await member.ban();
             return message.channel.send(`🔨 Banned ${member.user.tag}`);
-        } catch (err) {
-            console.log(err);
-            return message.reply("❌ Failed to ban.");
-        }
-    }
-
-    // ---------------- ROLE CREATE ----------------
-    if (cmd === "r") {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-            return message.reply("❌ No permission to manage roles.");
         }
 
-        if (args[0] === "create") {
-            const roleName = args.slice(1).join(" ");
+        // ---------------- ROLES SYSTEM ----------------
+        if (cmd === "r") {
 
-            if (!roleName) {
-                return message.reply("Usage: ,r create RoleName");
+            if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+                return message.reply("❌ No permission.");
             }
 
-            try {
+            // CREATE ROLE
+            if (args[0] === "create") {
+                const roleName = args.slice(1).join(" ");
+                if (!roleName) return message.reply("Usage: ,r create RoleName");
+
                 const role = await message.guild.roles.create({
-                    name: roleName,
-                    reason: `Created by ${message.author.tag}`
+                    name: roleName
                 });
 
-                return message.channel.send(`🎭 Role created: **${role.name}**`);
-            } catch (err) {
-                console.log(err);
-                return message.reply("❌ Failed to create role (check bot permissions + role hierarchy).");
+                return message.channel.send(`🎭 Created role: **${role.name}**`);
+            }
+
+            // ADD ROLE
+            if (args[0] === "add") {
+                const roleName = args.slice(2).join(" ");
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+
+                if (!member || !role) return message.reply("Usage: ,r add @user RoleName");
+
+                await member.roles.add(role);
+                return message.channel.send(`➕ Added ${role.name} to ${member.user.tag}`);
+            }
+
+            // REMOVE ROLE
+            if (args[0] === "remove") {
+                const roleName = args.slice(2).join(" ");
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+
+                if (!member || !role) return message.reply("Usage: ,r remove @user RoleName");
+
+                await member.roles.remove(role);
+                return message.channel.send(`➖ Removed ${role.name} from ${member.user.tag}`);
             }
         }
+
+    } catch (err) {
+        console.log(err);
+        message.reply("❌ Something went wrong.");
     }
 });
 
+// ---------------- LOGIN ----------------
 client.login(process.env.DISCORD_TOKEN);
