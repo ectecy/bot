@@ -8,16 +8,12 @@ const client = new Client({
     ]
 });
 
-client.once("ready", () => {
-    console.log("BOT ONLINE");
+client.on("messageCreate", (message) => {
+    console.log("MESSAGE RECEIVED:", message.content);
 });
 
-client.on("messageCreate", (message) => {
-    console.log("MSG:", message.content);
-
-    if (message.content === ",ping") {
-        message.reply("WORKS");
-    }
+client.once("ready", () => {
+    console.log("BOT ONLINE");
 });
 
 client.login(process.env.DISCORD_TOKEN);
