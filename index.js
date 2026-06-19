@@ -566,14 +566,27 @@ if (cmd === "slap") {
 
 if (cmd === "shoot") {
 
-    const gif = "https://media.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif";
+    const shootGIFs = [
+        "https://media.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif",
+        "https://media.tenor.com/3fK2hJ9lq8AAAAAC/anime-shoot.gif",
+        "https://media.tenor.com/9xP0kL2m1cAAAAAC/gun-anime.gif",
+        "https://media.tenor.com/7gH2kQw8zPAAAAAC/anime-gun-point.gif",
+        "https://media.tenor.com/5aX9mV3cQ1AAAAAC/anime-shooting.gif"
+    ];
+
+    const gif = shootGIFs[Math.floor(Math.random() * shootGIFs.length)];
+
+    const target = user || "someone";
 
     const embed = new EmbedBuilder()
         .setColor("DarkRed")
-        .setDescription(`🔫 ${message.author} shoots ${user || "someone"} 💥`)
-        .setImage(gif);
+        .setDescription(`🔫 ${message.author} shoots ${target} 💥`)
+        .setImage(gif)
+        .setTimestamp();
 
-    return message.channel.send({ embeds: [embed] });
+    return message.channel.send({
+        embeds: [embed]
+    });
 }
 
 /* =========================================================
