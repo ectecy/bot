@@ -1,0 +1,44 @@
+module.exports = (client) => {
+
+client.on("messageCreate", async (message) => {
+    if (!message.content.startsWith("!") || message.author.bot) return;
+
+    const args = message.content.slice(1).split(/ +/);
+    const cmd = args.shift().toLowerCase();
+
+    // KICK
+    if (cmd === "kick") {
+        if (!message.member.permissions.has("KickMembers")) return;
+
+        const user = message.mentions.members.first();
+        if (!user) return message.reply("Mention a user.");
+
+        await user.kick();
+        message.channel.send(`Kicked ${user.user.tag}`);
+    }
+
+    // BAN
+    if (cmd === "ban") {
+        if (!message.member.permissions.has("BanMembers")) return;
+
+        const user = message.mentions.members.first();
+        if (!user) return message.reply("Mention a user.");
+
+        await user.ban();
+        message.channel.send(`Banned ${user.user.tag}`);
+    }
+
+    // PURGE
+    if (cmd === "purge") {
+        if (!message.member.permissions.has("ManageMessages")) return;
+
+        const amount = parseInt(args[0]);
+        if (!amount) return message.reply("Give a number.");
+
+        await message.channel.bulkDelete(amount, true);
+        message.channel.send(`Deleted ${amount} messages`)
+            .then(m => setTimeout(() => m.delete(), 2000));
+    }
+};
+
+};
