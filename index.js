@@ -94,23 +94,31 @@ client.on("messageCreate", async (message) => {
 
     // ---------------- ROLE CREATE ----------------
     if (cmd === "r") {
-    console.log("ROLE COMMAND TRIGGERED");
-
-    if (!message.member.permissions.has("ManageRoles")) {
-        return message.reply("NO PERMISSION");
+    if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+        return message.reply("❌ You don't have permission to manage roles.");
     }
 
+    // ,r create RoleName
     if (args[0] === "create") {
         const roleName = args.slice(1).join(" ");
 
-        console.log("ROLE NAME:", roleName);
+        if (!roleName) {
+            return message.reply("❌ Use: ,r create RoleName");
+        }
 
-        const role = await message.guild.roles.create({
-            name: roleName || "test-role",
-        });
+        try {
+            const role = await message.guild.roles.create({
+                name: roleName,
+                reason: `Created by ${message.author.tag}`
+            });
 
-        return message.channel.send("ROLE CREATED: " + role.name);
+            return message.channel.send(`🎭 Role created: **${role.name}**`);
+        } catch (err) {
+            console.error(err);
+            return message.reply("❌ Failed to create role (check bot permissions).");
+        }
     }
+}
 }
             });
 
