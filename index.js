@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, PermissionsBitField } = require("discord.js");
 
 const PREFIX = ",";
 
@@ -10,12 +10,16 @@ const client = new Client({
     ]
 });
 
+client.once("ready", () => {
+    console.log(`Logged in as ${client.user.tag}`);
+});
+
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
-    const cmd = args.shift().toLowerCase();
+    const cmd = (args.shift() || "").toLowerCase();
 
     const user = message.mentions.users.first();
     const member = message.mentions.members.first();
@@ -23,9 +27,7 @@ client.on("messageCreate", async (message) => {
     // ---------------- COMMANDS ----------------
     if (cmd === "commands") {
         return message.channel.send(
-`📜 **Commands List**
-
-,commands - shows this menu
+`📜 **Commands**
 
 💖 Fun:
 ,hug @user
@@ -37,69 +39,102 @@ client.on("messageCreate", async (message) => {
 ,kick @user
 ,ban @user
 
+🎭 Roles:
+,r create RoleName
+
 🏓 Utility:
 ,ping`
         );
-    }
-
-    // ---------------- HUG ----------------
-    if (cmd === "hug") {
-        if (!user) return message.reply("Mention someone to hug!");
-        return message.channel.send(`🤗 ${message.author} hugs ${user}!`);
-    }
-
-    // ---------------- KISS ----------------
-    if (cmd === "kiss") {
-        if (!user) return message.reply("Mention someone to kiss!");
-        return message.channel.send(`💋 ${message.author} kisses ${user}!`);
-    }
-
-    // ---------------- SLAP ----------------
-    if (cmd === "slap") {
-        if (!user) return message.reply("Mention someone to slap!");
-        return message.channel.send(`👋 ${message.author} slaps ${user}!`);
-    }
-
-    // ---------------- SHOOT ----------------
-    if (cmd === "shoot") {
-        if (!user) return message.reply("Mention someone to shoot!");
-        return message.channel.send(`🔫 ${message.author} shoots ${user}! ouch`);
-    }
-
-    // ---------------- KICK ----------------
-    if (cmd === "kick") {
-        if (!message.member.permissions.has("KickMembers")) {
-            return message.reply("❌ You don't have permission to kick members.");
-        }
-
-        if (!member) return message.reply("Mention someone to kick!");
-        if (!member.kickable) return message.reply("❌ I can't kick this user.");
-
-        await member.kick().catch(() => {});
-        return message.channel.send(`👢 Kicked ${member.user.tag}`);
-    }
-
-    // ---------------- BAN ----------------
-    if (cmd === "ban") {
-        if (!message.member.permissions.has("BanMembers")) {
-            return message.reply("❌ You don't have permission to ban members.");
-        }
-
-        if (!member) return message.reply("Mention someone to ban!");
-        if (!member.bannable) return message.reply("❌ I can't ban this user.");
-
-        await member.ban().catch(() => {});
-        return message.channel.send(`🔨 Banned ${member.user.tag}`);
     }
 
     // ---------------- PING ----------------
     if (cmd === "ping") {
         return message.reply("🏓 Pong!");
     }
-});
 
-client.once("ready", () => {
-    console.log(`Logged in as ${client.user.tag}`);
+    // ---------------- FUN ----------------
+    if (cmd === "hug") {
+        if (!user) return message.reply("Mention someone!");
+        return message.channel.send(`🤗 ${message.author} hugs ${user}`);
+    }
+
+    if (cmd === "kiss") {
+        if (!user) return message.reply("Mention someone!");
+        return message.channel.send(`💋 ${message.author} kisses ${user}`);
+    }
+
+    if (cmd === "slap") {
+        if (!user) return message.reply("Mention someone!");
+        return message.channel.send(`👋 ${message.author} slaps ${user}`);
+    }
+
+    if (cmd === "shoot") {
+        if (!user) return message.reply("Mention someone!");
+        return message.channel.send(`🔫 ${message.author} shoots ${user} 💥`);
+    }
+
+    // ---------------- KICK ----------------
+    if (cmd === "kick") {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
+            return message.reply("❌ No permission.");
+        }
+
+        if (!member) return message.reply("Mention someone.");
+        if (!member.kickable) return message.reply("❌ I can't kick this user.");
+
+        try {
+            await member.kick();
+            return message.channel.send(`👢 Kicked ${member.user.tag}`);
+        } catch (err) {
+            console.log(err);
+            return message.reply("❌ Failed to kick.");
+        }
+    }
+
+    // ---------------- BAN ----------------
+    if (cmd === "ban") {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+            return message.reply("❌ No permission.");
+        }
+
+        if (!member) return message.reply("Mention someone.");
+        if (!member.bannable) return message.reply("❌ I can't ban this user.");
+
+        try {
+            await member.ban();
+            return message.channel.send(`🔨 Banned ${member.user.tag}`);
+        } catch (err) {
+            console.log(err);
+            return message.reply("❌ Failed to ban.");
+        }
+    }
+
+    // ---------------- ROLE CREATE ----------------
+    if (cmd === "r") {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+            return message.reply("❌ No permission to manage roles.");
+        }
+
+        if (args[0] === "create") {
+            const roleName = args.slice(1).join(" ");
+
+            if (!roleName) {
+                return message.reply("Usage: ,r create RoleName");
+            }
+
+            try {
+                const role = await message.guild.roles.create({
+                    name: roleName,
+                    reason: `Created by ${message.author.tag}`
+                });
+
+                return message.channel.send(`🎭 Role created: **${role.name}**`);
+            } catch (err) {
+                console.log(err);
+                return message.reply("❌ Failed to create role (check bot permissions + role hierarchy).");
+            }
+        }
+    }
 });
 
 client.login(process.env.DISCORD_TOKEN);
