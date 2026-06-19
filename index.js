@@ -567,11 +567,11 @@ if (cmd === "slap") {
 if (cmd === "shoot") {
 
     const shootGIFs = [
-        "https://media.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif",
-        "https://media.tenor.com/6ZQ8gKxwYbEAAAAC/anime-gun-point.gif",
-        "https://media.tenor.com/3dXxvQ7mYcIAAAAC/anime-shoot.gif",
-        "https://media.tenor.com/1Qw8k9gH8oAAAAAC/slap-anime.gif", // fallback styled action
-        "https://media.tenor.com/4fG7kL2pVnMAAAAC/gun-anime.gif"
+        "https://media.tenor.com/2roX3uxz_68AAAAC/anime-gun.gif",
+        "https://media.tenor.com/1Qw8k9gH8oAAAAAC/slap-anime.gif",
+        "https://media.tenor.com/9Y1b3KQvQ5MAAAAC/anime-shoot.gif",
+        "https://media.tenor.com/W3KQv6GgQxEAAAAC/gun-point-anime.gif",
+        "https://media.tenor.com/0Gf3dKxqv7MAAAAC/anime-gun-point.gif"
     ];
 
     const gif = shootGIFs[Math.floor(Math.random() * shootGIFs.length)];
