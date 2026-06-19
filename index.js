@@ -4,7 +4,7 @@ const fs = require("fs");
 const PREFIX = ",";
 
 /* =========================================================
-   📦 DATABASE (PERSISTENT STORAGE)
+   📦 PERSISTENT DATABASE
 ========================================================= */
 
 let db = {
@@ -77,7 +77,7 @@ client.on("messageCreate", async (message) => {
 
     try {
 
-        /* ================= XP ================= */
+        /* ================= XP SYSTEM ================= */
         addXP(message.author.id);
 
         /* ================= COMMAND LIST ================= */
