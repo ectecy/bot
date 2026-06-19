@@ -55,19 +55,103 @@ function addXP(userId) {
    🎉 GIVEAWAY HELPERS
 ========================================================= */
 
-function parseDuration(str) {
-    if (!str) return 0;
-    const match = str.match(/(\d+)(s|m|h|d)/);
-    if (!match) return 0;
+/* ================= GIVEAWAY (FIXED) ================= */
 
-    const num = parseInt(match[1]);
-    const type = match[2];
+if (cmd === "g") {
+    const sub = args[0];
 
-    if (type === "s") return num * 1000;
-    if (type === "m") return num * 60 * 1000;
-    if (type === "h") return num * 60 * 60 * 1000;
-    if (type === "d") return num * 24 * 60 * 60 * 1000;
-    return 0;
+    /* ---------------- CREATE ---------------- */
+    if (sub === "create") {
+        const prize = args[1];
+        const duration = parseDuration(args[2]);
+        const req = args.slice(3).join(" ") || "None";
+
+        if (!prize || !duration) {
+            return message.reply("Usage: ,g create <prize> <duration> <requirement>");
+        }
+
+        const end = Date.now() + duration;
+
+        const gw = await message.channel.send(
+`🎉 **GIVEAWAY**
+
+🏆 Prize: **${prize}**
+📌 Requirement: **${req}**
+⏰ Ends: <t:${Math.floor(end / 1000)}:R>
+
+React 🎉 to enter!`
+        );
+
+        await gw.react("🎉");
+
+        db.giveaways[gw.id] = {
+            prize,
+            end,
+            channelId: message.channel.id
+        };
+
+        saveDB();
+
+        setTimeout(async () => {
+            try {
+                const msg = await message.channel.messages.fetch(gw.id);
+                const reaction = msg.reactions.cache.get("🎉");
+
+                if (!reaction) {
+                    return message.channel.send("❌ No entries for giveaway.");
+                }
+
+                const users = await reaction.users.fetch();
+                const valid = users.filter(u => !u.bot);
+
+                const winner = valid.random();
+                if (!winner) {
+                    return message.channel.send("❌ No valid winner.");
+                }
+
+                message.channel.send(`🏆 Winner: ${winner} | Prize: **${prize}**`);
+
+                delete db.giveaways[gw.id];
+                saveDB();
+
+            } catch (err) {
+                console.log("Giveaway error:", err);
+            }
+        }, duration);
+    }
+
+    /* ---------------- REROLL ---------------- */
+    if (sub === "reroll") {
+        const messageId = args[1];
+
+        if (!messageId) {
+            return message.reply("Usage: ,g reroll <messageID>");
+        }
+
+        try {
+            const msg = await message.channel.messages.fetch(messageId);
+            const reaction = msg.reactions.cache.get("🎉");
+
+            if (!reaction) {
+                return message.reply("❌ No reactions found on this giveaway.");
+            }
+
+            const users = await reaction.users.fetch();
+            const valid = users.filter(u => !u.bot);
+
+            const winner = valid.random();
+            if (!winner) {
+                return message.channel.send("❌ No valid entries.");
+            }
+
+            return message.channel.send(`🔁 New winner: ${winner}`);
+
+        } catch (err) {
+            console.log(err);
+            return message.reply("❌ Could not reroll giveaway.");
+        }
+    }
+}
 }
 
 /* =========================================================
