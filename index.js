@@ -67,7 +67,7 @@ client.on("messageCreate", async (message) => {
 
     try {
 
-        // ---------------- XP GAIN (EVERY MESSAGE) ----------------
+        // ---------------- XP SYSTEM ----------------
         addXP(message.author.id);
 
         // ---------------- COMMANDS ----------------
@@ -85,9 +85,10 @@ client.on("messageCreate", async (message) => {
 ,ban
 ,unban
 
-🎉 Giveaway:
-,g create
-,g reroll
+🎭 Roles:
+,r create
+,r add
+,r remove
 
 📊 Leveling:
 ,rank
@@ -109,23 +110,20 @@ client.on("messageCreate", async (message) => {
             return message.reply(`📊 Level: **${level}** | ⭐ XP: **${xp}**`);
         }
 
-        // ---------------- LEADERBOARD (g.m) ----------------
+        // ---------------- LEADERBOARD ----------------
         if (cmd === "g.m") {
 
             const sorted = Object.entries(db.xp)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 10);
 
-            if (!sorted.length) {
-                return message.channel.send("❌ No XP data yet.");
-            }
+            if (!sorted.length) return message.channel.send("❌ No XP data yet.");
 
             let msg = "🏆 **LEVEL LEADERBOARD**\n\n";
 
             sorted.forEach((u, i) => {
                 const xp = u[1];
                 const level = getLevel(xp);
-
                 msg += `${i + 1}. <@${u[0]}> — Level ${level} (${xp} XP)\n`;
             });
 
@@ -165,13 +163,11 @@ client.on("messageCreate", async (message) => {
 
             message.channel.send(`⚠️ ${member.user.tag} warned (${count}/4)\nReason: ${reason}`);
 
-            if (count >= 4) {
-                if (member.bannable) {
-                    await member.ban({ reason: "4 warns" }).catch(() => {});
-                    db.warns[member.id] = 0;
-                    saveDB();
-                    message.channel.send(`🔨 Auto-banned ${member.user.tag}`);
-                }
+            if (count >= 4 && member.bannable) {
+                await member.ban({ reason: "4 warns" }).catch(() => {});
+                db.warns[member.id] = 0;
+                saveDB();
+                message.channel.send(`🔨 Auto-banned ${member.user.tag}`);
             }
         }
 
@@ -213,6 +209,53 @@ client.on("messageCreate", async (message) => {
         if (cmd === "kiss") return message.channel.send(`💋 ${message.author} kisses ${user || "someone"}`);
         if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
         if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
+
+        // ---------------- ROLE SYSTEM (RESTORED) ----------------
+        if (cmd === "r") {
+
+            if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+                return message.reply("❌ No permission.");
+            }
+
+            // CREATE ROLE
+            if (args[0] === "create") {
+                const roleName = args.slice(1).join(" ");
+                if (!roleName) return message.reply("Usage: ,r create RoleName");
+
+                const role = await message.guild.roles.create({
+                    name: roleName,
+                    reason: `Created by ${message.author.tag}`
+                });
+
+                return message.channel.send(`🎭 Created role: **${role.name}**`);
+            }
+
+            // ADD ROLE
+            if (args[0] === "add") {
+                const member = message.mentions.members.first();
+                const roleName = args.slice(2).join(" ");
+
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+
+                if (!member || !role) return message.reply("Usage: ,r add @user RoleName");
+
+                await member.roles.add(role);
+                return message.channel.send(`➕ Added ${role.name} to ${member.user.tag}`);
+            }
+
+            // REMOVE ROLE
+            if (args[0] === "remove") {
+                const member = message.mentions.members.first();
+                const roleName = args.slice(2).join(" ");
+
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+
+                if (!member || !role) return message.reply("Usage: ,r remove @user RoleName");
+
+                await member.roles.remove(role);
+                return message.channel.send(`➖ Removed ${role.name} from ${member.user.tag}`);
+            }
+        }
 
     } catch (err) {
         console.log(err);
