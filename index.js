@@ -531,9 +531,9 @@ if (cmd === "unlock") {
 if (cmd === "hug") {
     const gif = "https://media.tenor.com/4S2Yf5y0p1AAAAAC/hug-anime.gif";
 
-    const target = user ?? message.author;
+    const target = member || message.author;
 
-    return message.reply({
+    return message.channel.send({
         embeds: [
             new EmbedBuilder()
                 .setColor("Pink")
@@ -542,13 +542,12 @@ if (cmd === "hug") {
         ]
     });
 }
-
 if (cmd === "kiss") {
     const gif = "https://media.tenor.com/3JZ6k2oQxqAAAAAC/anime-kiss.gif";
 
-    const target = user ?? message.author;
+    const target = member || message.author;
 
-    return message.reply({
+    return message.channel.send({
         embeds: [
             new EmbedBuilder()
                 .setColor("Pink")
