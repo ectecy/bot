@@ -10,23 +10,51 @@ const client = new Client({
     ]
 });
 
-client.on("messageCreate", (message) => {
+// cooldown (optional spam protection)
+const cooldown = new Map();
+
+client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
 
-    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
+    const now = Date.now();
+    const last = cooldown.get(message.author.id) || 0;
 
-    // ,ping
-    if (command === "ping") {
-        return message.reply("Pong!");
+    if (now - last < 1000) return;
+    cooldown.set(message.author.id, now);
+
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+    const cmd = args.shift().toLowerCase();
+
+    const user = message.mentions.users.first();
+
+    // ---------------- HUG ----------------
+    if (cmd === "hug") {
+        if (!user) return message.reply("Mention someone to hug!");
+        return message.channel.send(`🤗 ${message.author} hugs ${user}!`);
     }
 
-    // ,hug @user
-    if (command === "hug") {
-        const user = message.mentions.users.first();
-        if (!user) return message.reply("Mention someone!");
-        return message.channel.send(`🤗 ${message.author} hugs ${user}`);
+    // ---------------- KISS ----------------
+    if (cmd === "kiss") {
+        if (!user) return message.reply("Mention someone to kiss!");
+        return message.channel.send(`💋 ${message.author} kisses ${user}!`);
+    }
+
+    // ---------------- SLAP ----------------
+    if (cmd === "slap") {
+        if (!user) return message.reply("Mention someone to slap!");
+        return message.channel.send(`👋 ${message.author} slaps ${user}!`);
+    }
+
+    // ---------------- SHOOT ----------------
+    if (cmd === "shoot") {
+        if (!user) return message.reply("Mention someone to shoot!");
+        return message.channel.send(`🔫 ${message.author} shoots ${user}! *ouch*`);
+    }
+
+    // ---------------- PING ----------------
+    if (cmd === "ping") {
+        return message.reply("Pong!");
     }
 });
 
