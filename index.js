@@ -69,6 +69,7 @@ client.on("messageCreate", async (message) => {
 
 🎉 Giveaway:
 ,g create
+,g reroll
 
 💖 Fun:
 ,hug
@@ -121,7 +122,7 @@ client.on("messageCreate", async (message) => {
             }
         }
 
-        // ---------------- KICK ----------------
+        // ---------------- MODERATION ----------------
         if (cmd === "kick") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
             if (!member) return;
@@ -130,7 +131,6 @@ client.on("messageCreate", async (message) => {
             return message.channel.send(`👢 Kicked ${member.user.tag}`);
         }
 
-        // ---------------- BAN ----------------
         if (cmd === "ban") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
             if (!member) return;
@@ -139,7 +139,6 @@ client.on("messageCreate", async (message) => {
             return message.channel.send(`🔨 Banned ${member.user.tag}`);
         }
 
-        // ---------------- UNBAN (NEW ADDED) ----------------
         if (cmd === "unban") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
                 return message.reply("❌ No permission.");
@@ -151,8 +150,7 @@ client.on("messageCreate", async (message) => {
             try {
                 await message.guild.members.unban(userId);
                 return message.channel.send(`✅ Unbanned <@${userId}>`);
-            } catch (err) {
-                console.log(err);
+            } catch {
                 return message.reply("❌ Could not unban user.");
             }
         }
@@ -163,12 +161,75 @@ client.on("messageCreate", async (message) => {
         if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
         if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
 
-        // ---------------- GIVEAWAY ----------------
+        // ---------------- GIVEAWAY SYSTEM (UPDATED) ----------------
         if (cmd === "g") {
+
+            // ---------------- CREATE ----------------
             if (args[0] === "create") {
-                await message.channel.send(
-`🎉 Giveaway setup coming next update`
+
+                const ask = async (q) => {
+                    await message.channel.send(q);
+
+                    const collected = await message.channel.awaitMessages({
+                        filter: m => m.author.id === message.author.id,
+                        max: 1,
+                        time: 60000
+                    }).catch(() => null);
+
+                    if (!collected || !collected.first()) return null;
+                    return collected.first().content;
+                };
+
+                const prize = await ask("🎁 What is the prize?");
+                if (!prize) return message.reply("❌ Cancelled.");
+
+                const duration = await ask("⏱ Duration? (10m / 1h / 30s)");
+                if (!duration) return message.reply("❌ Cancelled.");
+
+                const req = await ask("📋 Requirements? (type 'none' if nothing)");
+                if (!req) return message.reply("❌ Cancelled.");
+
+                const ms = parseDuration(duration);
+                if (!ms) return message.reply("❌ Invalid duration.");
+
+                const end = Date.now() + ms;
+
+                const msg = await message.channel.send(
+`🎉 **GIVEAWAY**
+
+🎁 Prize: **${prize}**
+📋 Requirements: **${req}**
+⏱ Ends: <t:${Math.floor(end / 1000)}:R>
+
+React 🎉 to join!`
                 );
+
+                await msg.react("🎉");
+
+                db.giveaways[msg.id] = {
+                    entries: []
+                };
+
+                saveDB();
+
+                setTimeout(() => endGiveaway(msg.id, message.channel), ms);
+
+                return;
+            }
+
+            // ---------------- REROLL ----------------
+            if (args[0] === "reroll") {
+                const msgId = args[1];
+                const g = db.giveaways[msgId];
+
+                if (!g) return message.reply("❌ Giveaway not found.");
+                if (!g.entries || g.entries.length === 0) {
+                    return message.reply("❌ No entries.");
+                }
+
+                const winner = g.entries[Math.floor(Math.random() * g.entries.length)];
+
+                return message.channel.send(`🎉 New winner: <@${winner}>`);
             }
         }
 
@@ -176,6 +237,57 @@ client.on("messageCreate", async (message) => {
         console.log(err);
     }
 });
+
+// ---------------- REACTIONS ----------------
+client.on("messageReactionAdd", (reaction, user) => {
+    if (user.bot) return;
+
+    const g = db.giveaways[reaction.message.id];
+    if (!g) return;
+
+    if (reaction.emoji.name === "🎉") {
+        if (!g.entries.includes(user.id)) {
+            g.entries.push(user.id);
+            saveDB();
+        }
+    }
+});
+
+// ---------------- GIVEAWAY END ----------------
+function endGiveaway(id, channel) {
+    const g = db.giveaways[id];
+    if (!g) return;
+
+    if (!g.entries.length) {
+        channel.send("❌ No entries.");
+        delete db.giveaways[id];
+        saveDB();
+        return;
+    }
+
+    const winner = g.entries[Math.floor(Math.random() * g.entries.length)];
+
+    channel.send(`🎉 Winner: <@${winner}>`);
+
+    delete db.giveaways[id];
+    saveDB();
+}
+
+// ---------------- DURATION PARSER ----------------
+function parseDuration(str) {
+    if (!str) return null;
+
+    const m = str.match(/(\d+)(s|m|h)/);
+    if (!m) return null;
+
+    const n = parseInt(m[1]);
+
+    if (m[2] === "s") return n * 1000;
+    if (m[2] === "m") return n * 60000;
+    if (m[2] === "h") return n * 3600000;
+
+    return null;
+}
 
 // ---------------- LOGIN ----------------
 client.login(process.env.DISCORD_TOKEN);
