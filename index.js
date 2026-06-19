@@ -568,15 +568,15 @@ if (cmd === "shoot") {
 
     const shootGIFs = [
         "https://media.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif",
-        "https://media.tenor.com/3fK2hJ9lq8AAAAAC/anime-shoot.gif",
-        "https://media.tenor.com/9xP0kL2m1cAAAAAC/gun-anime.gif",
-        "https://media.tenor.com/7gH2kQw8zPAAAAAC/anime-gun-point.gif",
-        "https://media.tenor.com/5aX9mV3cQ1AAAAAC/anime-shooting.gif"
+        "https://media.tenor.com/6ZQ8gKxwYbEAAAAC/anime-gun-point.gif",
+        "https://media.tenor.com/3dXxvQ7mYcIAAAAC/anime-shoot.gif",
+        "https://media.tenor.com/1Qw8k9gH8oAAAAAC/slap-anime.gif", // fallback styled action
+        "https://media.tenor.com/4fG7kL2pVnMAAAAC/gun-anime.gif"
     ];
 
     const gif = shootGIFs[Math.floor(Math.random() * shootGIFs.length)];
 
-    const target = user || "someone";
+    const target = user ? user : "someone";
 
     const embed = new EmbedBuilder()
         .setColor("DarkRed")
@@ -584,9 +584,7 @@ if (cmd === "shoot") {
         .setImage(gif)
         .setTimestamp();
 
-    return message.channel.send({
-        embeds: [embed]
-    });
+    return message.channel.send({ embeds: [embed] });
 }
 
 /* =========================================================
