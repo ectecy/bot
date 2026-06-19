@@ -262,51 +262,48 @@ client.on("messageCreate", async (message) => {
            WARN SYSTEM
         ================================================= */
 
-        if (cmd === "warn") {
+       /* =================================================
+   WARN SYSTEM
+================================================= */
 
-            if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-                return message.reply("❌ No permission.");
+if (cmd === "warn") {
 
-            if (!member)
-                return message.reply("❌ Mention someone.");
+    if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
+        return message.reply("❌ No permission.");
 
-            const reason = args.join(" ") || "No reason";
+    if (!member)
+        return message.reply("❌ Mention someone.");
 
-            db.warns[member.id] = (db.warns[member.id] || 0) + 1;
+    const reason = args.join(" ") || "No reason";
+
+    db.warns[member.id] = (db.warns[member.id] || 0) + 1;
+    saveDB();
+
+    const count = db.warns[member.id];
+
+    const warnEmbed = new EmbedBuilder()
+        .setColor("Orange")
+        .setTitle("⚠️ User Warned")
+        .addFields(
+            { name: "User", value: `${member.user.tag}`, inline: true },
+            { name: "Warnings", value: `${count}/4`, inline: true },
+            { name: "Reason", value: reason }
+        )
+        .setTimestamp();
+
+    await message.channel.send({ embeds: [warnEmbed] });
+
+    if (count >= 4) {
+        const target = await message.guild.members.fetch(member.id).catch(() => null);
+
+        if (target && target.bannable) {
+            await target.ban({ reason: "4 warns reached" });
+
+            db.warns[member.id] = 0;
             saveDB();
-
-            const count = db.warns[member.id];
-
-            const warnEmbed = new EmbedBuilder()
-                .setColor("Orange")
-                .setTitle("⚠️ User Warned")
-                .addFields(
-                    { name: "User", value: `${member.user.tag}`, inline: true },
-                    { name: "Warnings", value: `${count}/4`, inline: true },
-                    { name: "Reason", value: reason }
-                )
-                .setTimestamp();
-
-            await message.channel.send({ embeds: [warnEmbed] });
-
-            if (count >= 4) {
-                const target = await message.guild.members.fetch(member.id).catch(() => null);
-
-                if (target && target.bannable) {
-                    await target.ban({ reason: "4 warns reached" }).catch(() => {});
-                    db.warns[member.id] = 0;
-                    saveDB();
-
-                    const autoBanEmbed = new EmbedBuilder()
-                        .setColor("Red")
-                        .setTitle("🔨 Auto Banned")
-                        .setDescription(`${member.user.tag} was banned after reaching 4 warns.`);
-
-                    return message.channel.send({ embeds: [autoBanEmbed] });
-                }
-            }
         }
-
+    }
+}
         /* =================================================
            KICK
         ================================================= */
@@ -393,50 +390,44 @@ client.on("messageCreate", async (message) => {
 
             return message.channel.send({ embeds: [embed] });
         }
+/* ================= LOCK CHANNEL ================= */
 
-        /* =================================================
-           LOCK CHANNEL
-        ================================================= */
+if (cmd === "lock") {
+    if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels))
+        return message.reply("❌ No permission.");
 
-        if (cmd === "lock") {
+    await message.channel.permissionOverwrites.edit(
+        message.guild.roles.everyone,
+        { SendMessages: false }
+    );
 
-            if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels))
-                return message.reply("❌ No permission.");
+    const embed = new EmbedBuilder()
+        .setColor("DarkRed")
+        .setTitle("🔒 Channel Locked")
+        .setDescription(`${message.channel} is now locked.`);
 
-            await message.channel.permissionOverwrites.edit(
-                message.guild.roles.everyone,
-                { SendMessages: false }
-            );
+    return message.channel.send({ embeds: [embed] });
+}
 
-            const embed = new EmbedBuilder()
-                .setColor("DarkRed")
-                .setTitle("🔒 Channel Locked")
-                .setDescription(`${message.channel} is now locked.`);
+/* ================= UNLOCK CHANNEL ================= */
 
-            return message.channel.send({ embeds: [embed] });
-        }
+if (cmd === "unlock") {
+    if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels))
+        return message.reply("❌ No permission.");
 
-        /* =================================================
-           UNLOCK CHANNEL
-        ================================================= */
+    await message.channel.permissionOverwrites.edit(
+        message.guild.roles.everyone,
+        { SendMessages: true }
+    );
 
-        if (cmd === "unlock") {
+    const embed = new EmbedBuilder()
+        .setColor("Green")
+        .setTitle("🔓 Channel Unlocked")
+        .setDescription(`${message.channel} is now unlocked.`);
 
-            if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels))
-                return message.reply("❌ No permission.");
-
-            await message.channel.permissionOverwrites.edit(
-                message.guild.roles.everyone,
-                { SendMessages: true }
-            );
-
-            const embed = new EmbedBuilder()
-                .setColor("Green")
-                .setTitle("🔓 Channel Unlocked")
-                .setDescription(`${message.channel} is now unlocked.`);
-
-            return message.channel.send({ embeds: [embed] });
-        } /* =================================================
+    return message.channel.send({ embeds: [embed] });
+}
+         /* =================================================
            🎭 ROLE SYSTEM
         ================================================= */
 
@@ -588,5 +579,10 @@ if (cmd === "shoot") {
 /* =========================================================
    🔐 LOGIN
 ========================================================= */
+
+    } catch (err) {
+        console.log(err);
+    }
+});
 
 client.login(process.env.DISCORD_TOKEN);
