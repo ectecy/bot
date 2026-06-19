@@ -14,8 +14,8 @@ let db = {
 if (fs.existsSync("./data.json")) {
     try {
         db = JSON.parse(fs.readFileSync("./data.json", "utf8"));
-    } catch {
-        console.log("DB load error");
+    } catch (e) {
+        console.log("❌ DB load error, using fresh database");
     }
 }
 
@@ -34,23 +34,14 @@ const client = new Client({
     ]
 });
 
-// ---------------- LEVEL ----------------
+// ---------------- LEVEL SYSTEM ----------------
 function getLevel(xp) {
     return Math.floor(Math.sqrt(xp / 100));
 }
 
-function addXP(id) {
-    db.xp[id] = (db.xp[id] || 0) + Math.floor(Math.random() * 11) + 5;
+function addXP(userId) {
+    db.xp[userId] = (db.xp[userId] || 0) + Math.floor(Math.random() * 11) + 5;
     saveDB();
-}
-
-// ---------------- EMBED HELPER ----------------
-function baseEmbed(title, desc = "") {
-    return new EmbedBuilder()
-        .setColor("#2b2d31")
-        .setTitle(title)
-        .setDescription(desc)
-        .setFooter({ text: "Bot System" });
 }
 
 // ---------------- READY ----------------
@@ -58,7 +49,7 @@ client.once("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
 });
 
-// ---------------- MAIN ----------------
+// ---------------- MESSAGE ----------------
 client.on("messageCreate", async (message) => {
     try {
         if (!message.guild || message.author.bot) return;
@@ -72,38 +63,39 @@ client.on("messageCreate", async (message) => {
 
         addXP(message.author.id);
 
-        // ---------------- COMMANDS MENU ----------------
+        // ---------------- COMMANDS (FIXED + SAFE) ----------------
         if (cmd === "commands") {
-            return message.channel.send({
-                embeds: [
-                    baseEmbed("📜 Command Menu",
-`
-💰 Economy
-• ,balance
-• ,work
+            const embed = new EmbedBuilder()
+                .setColor("#2b2d31")
+                .setTitle("📜 Command Menu")
+                .setDescription(
+`💰 Economy
+,balance
+,work
 
 📊 Leveling
-• ,rank
-• ,g.m
+,rank
+,g.m
 
 ⚠️ Moderation
-• ,warn
-• ,kick
-• ,ban
-• ,unban
+,warn
+,kick
+,ban
+,unban
 
 🎉 Giveaway
-• ,g create
-• ,g reroll
+,g create
+,g reroll
 
 💖 Fun
-• ,hug
-• ,kiss
-• ,slap
-• ,shoot
-`)
-                ]
-            });
+,hug
+,kiss
+,slap
+,shoot`
+                )
+                .setFooter({ text: "Prefix: ," });
+
+            return message.channel.send({ embeds: [embed] });
         }
 
         // ---------------- RANK ----------------
@@ -112,9 +104,10 @@ client.on("messageCreate", async (message) => {
 
             return message.channel.send({
                 embeds: [
-                    baseEmbed("📊 Your Rank",
-                        `Level: **${getLevel(xp)}**\nXP: **${xp}**`
-                    )
+                    new EmbedBuilder()
+                        .setColor("#2b2d31")
+                        .setTitle("📊 Your Rank")
+                        .setDescription(`Level: **${getLevel(xp)}**\nXP: **${xp}**`)
                 ]
             });
         }
@@ -127,36 +120,30 @@ client.on("messageCreate", async (message) => {
 
             return message.channel.send({
                 embeds: [
-                    baseEmbed("🏆 Leaderboard",
-                        sorted.map((u, i) =>
-                            `**${i + 1}.** <@${u[0]}> — Level **${getLevel(u[1])}** (${u[1]} XP)`
-                        ).join("\n")
-                    )
+                    new EmbedBuilder()
+                        .setColor("#2b2d31")
+                        .setTitle("🏆 Leaderboard")
+                        .setDescription(
+                            sorted.length
+                                ? sorted.map((u, i) =>
+                                    `**${i + 1}.** <@${u[0]}> — Level **${getLevel(u[1])}** (${u[1]} XP)`
+                                ).join("\n")
+                                : "No data yet."
+                        )
                 ]
             });
         }
 
         // ---------------- ECONOMY ----------------
         if (cmd === "balance") {
-            return message.reply({
-                embeds: [
-                    baseEmbed("💰 Balance",
-                        `$${db.economy[message.author.id] || 0}`
-                    )
-                ]
-            });
+            return message.reply(`💰 $${db.economy[message.author.id] || 0}`);
         }
 
         if (cmd === "work") {
             const amount = Math.floor(Math.random() * 200) + 50;
             db.economy[message.author.id] = (db.economy[message.author.id] || 0) + amount;
             saveDB();
-
-            return message.reply({
-                embeds: [
-                    baseEmbed("💼 Work Complete", `Earned **$${amount}**`)
-                ]
-            });
+            return message.reply(`💼 +$${amount}`);
         }
 
         // ---------------- WARN ----------------
@@ -173,24 +160,15 @@ client.on("messageCreate", async (message) => {
 
             const count = db.warns[member.id];
 
-            await message.channel.send({
-                embeds: [
-                    baseEmbed("⚠️ Warning Issued",
-                        `${member.user.tag}\nWarnings: **${count}/4**\nReason: ${reason}`
-                    )
-                ]
-            });
+            message.channel.send(
+                `⚠️ **${member.user.tag} warned (${count}/4)**\nReason: ${reason}`
+            );
 
             if (count >= 4 && member.bannable) {
                 await member.ban({ reason: "4 warns" }).catch(() => {});
                 db.warns[member.id] = 0;
                 saveDB();
-
-                message.channel.send({
-                    embeds: [
-                        baseEmbed("🔨 Auto Ban", `${member.user.tag} was banned`)
-                    ]
-                });
+                message.channel.send(`🔨 Auto-banned ${member.user.tag}`);
             }
         }
 
@@ -201,13 +179,11 @@ client.on("messageCreate", async (message) => {
 
             if (!member) return;
 
-            await member.kick();
+            const target = await message.guild.members.fetch(member.id).catch(() => null);
+            if (!target || !target.kickable) return;
 
-            return message.channel.send({
-                embeds: [
-                    baseEmbed("👢 Kicked", member.user.tag)
-                ]
-            });
+            await target.kick();
+            return message.channel.send(`👢 Kicked **${target.user.tag}**`);
         }
 
         // ---------------- BAN ----------------
@@ -217,13 +193,11 @@ client.on("messageCreate", async (message) => {
 
             if (!member) return;
 
-            await member.ban();
+            const target = await message.guild.members.fetch(member.id).catch(() => null);
+            if (!target || !target.bannable) return;
 
-            return message.channel.send({
-                embeds: [
-                    baseEmbed("🔨 Banned", member.user.tag)
-                ]
-            });
+            await target.ban();
+            return message.channel.send(`🔨 Banned **${target.user.tag}**`);
         }
 
         // ---------------- UNBAN ----------------
@@ -232,29 +206,17 @@ client.on("messageCreate", async (message) => {
             if (!id) return;
 
             await message.guild.members.unban(id).catch(() => {});
-
-            return message.channel.send({
-                embeds: [
-                    baseEmbed("✅ Unbanned", `<@${id}>`)
-                ]
-            });
+            return message.channel.send(`✅ Unbanned <@${id}>`);
         }
 
         // ---------------- FUN ----------------
-        if (cmd === "hug")
-            return message.channel.send({ embeds: [baseEmbed("🤗 Hug", `${message.author} hugs ${user || "someone"}`)] });
-
-        if (cmd === "kiss")
-            return message.channel.send({ embeds: [baseEmbed("💋 Kiss", `${message.author} kisses ${user || "someone"}`)] });
-
-        if (cmd === "slap")
-            return message.channel.send({ embeds: [baseEmbed("👋 Slap", `${message.author} slaps ${user || "someone"}`)] });
-
-        if (cmd === "shoot")
-            return message.channel.send({ embeds: [baseEmbed("🔫 Shoot", `${message.author} shoots ${user || "someone"} 💥`)] });
+        if (cmd === "hug") return message.channel.send(`🤗 ${message.author} hugs ${user || "someone"}`);
+        if (cmd === "kiss") return message.channel.send(`💋 ${message.author} kisses ${user || "someone"}`);
+        if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
+        if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
 
     } catch (err) {
-        console.log(err);
+        console.log("❌ Error:", err);
     }
 });
 
