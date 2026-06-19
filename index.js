@@ -8,7 +8,6 @@ const client = new Client({
     ]
 });
 
-// cooldown (optional spam protection)
 const cooldown = new Map();
 
 client.on("messageCreate", async (message) => {
@@ -26,25 +25,25 @@ client.on("messageCreate", async (message) => {
 
     const user = message.mentions.users.first();
 
-    // ---------------- HUG ----------------
+    // HUG
     if (cmd === "hug") {
         if (!user) return message.reply("Mention someone to hug!");
         return message.channel.send(`🤗 ${message.author} hugs ${user}!`);
     }
 
-    // ---------------- KISS ----------------
+    // KISS
     if (cmd === "kiss") {
         if (!user) return message.reply("Mention someone to kiss!");
         return message.channel.send(`💋 ${message.author} kisses ${user}!`);
     }
 
-    // ---------------- SLAP ----------------
+    // SLAP
     if (cmd === "slap") {
         if (!user) return message.reply("Mention someone to slap!");
         return message.channel.send(`👋 ${message.author} slaps ${user}!`);
     }
 
-    // ---------------- SHOOT ----------------
+    // SHOOT
     if (cmd === "shoot") {
         if (!user) return message.reply("Mention someone to shoot!");
         return message.channel.send(`🔫 ${message.author} shoots ${user}! *ouch*`);
