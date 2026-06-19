@@ -12,7 +12,8 @@ const PREFIX = ",";
 let db = {
     economy: {},
     warns: {},
-    giveaways: {}
+    giveaways: {},
+    xp: {}
 };
 
 if (fs.existsSync("./data.json")) {
@@ -34,6 +35,20 @@ const client = new Client({
     ]
 });
 
+// ---------------- LEVEL SYSTEM ----------------
+function getLevel(xp) {
+    return Math.floor(Math.sqrt(xp / 100));
+}
+
+function addXP(userId) {
+    const gain = Math.floor(Math.random() * 11) + 5;
+
+    if (!db.xp[userId]) db.xp[userId] = 0;
+    db.xp[userId] += gain;
+
+    saveDB();
+}
+
 // ---------------- READY ----------------
 client.once("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
@@ -51,6 +66,9 @@ client.on("messageCreate", async (message) => {
     const member = message.mentions.members.first();
 
     try {
+
+        // ---------------- XP GAIN (EVERY MESSAGE) ----------------
+        addXP(message.author.id);
 
         // ---------------- COMMANDS ----------------
         if (cmd === "commands") {
@@ -71,12 +89,47 @@ client.on("messageCreate", async (message) => {
 ,g create
 ,g reroll
 
+📊 Leveling:
+,rank
+,g.m
+
 💖 Fun:
 ,hug
 ,kiss
 ,slap
 ,shoot`
             );
+        }
+
+        // ---------------- RANK ----------------
+        if (cmd === "rank") {
+            const xp = db.xp[message.author.id] || 0;
+            const level = getLevel(xp);
+
+            return message.reply(`📊 Level: **${level}** | ⭐ XP: **${xp}**`);
+        }
+
+        // ---------------- LEADERBOARD (g.m) ----------------
+        if (cmd === "g.m") {
+
+            const sorted = Object.entries(db.xp)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            if (!sorted.length) {
+                return message.channel.send("❌ No XP data yet.");
+            }
+
+            let msg = "🏆 **LEVEL LEADERBOARD**\n\n";
+
+            sorted.forEach((u, i) => {
+                const xp = u[1];
+                const level = getLevel(xp);
+
+                msg += `${i + 1}. <@${u[0]}> — Level ${level} (${xp} XP)\n`;
+            });
+
+            return message.channel.send(msg);
         }
 
         // ---------------- ECONOMY ----------------
@@ -161,133 +214,10 @@ client.on("messageCreate", async (message) => {
         if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
         if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
 
-        // ---------------- GIVEAWAY SYSTEM (UPDATED) ----------------
-        if (cmd === "g") {
-
-            // ---------------- CREATE ----------------
-            if (args[0] === "create") {
-
-                const ask = async (q) => {
-                    await message.channel.send(q);
-
-                    const collected = await message.channel.awaitMessages({
-                        filter: m => m.author.id === message.author.id,
-                        max: 1,
-                        time: 60000
-                    }).catch(() => null);
-
-                    if (!collected || !collected.first()) return null;
-                    return collected.first().content;
-                };
-
-                const prize = await ask("🎁 What is the prize?");
-                if (!prize) return message.reply("❌ Cancelled.");
-
-                const duration = await ask("⏱ Duration? (10m / 1h / 30s)");
-                if (!duration) return message.reply("❌ Cancelled.");
-
-                const req = await ask("📋 Requirements? (type 'none' if nothing)");
-                if (!req) return message.reply("❌ Cancelled.");
-
-                const ms = parseDuration(duration);
-                if (!ms) return message.reply("❌ Invalid duration.");
-
-                const end = Date.now() + ms;
-
-                const msg = await message.channel.send(
-`🎉 **GIVEAWAY**
-
-🎁 Prize: **${prize}**
-📋 Requirements: **${req}**
-⏱ Ends: <t:${Math.floor(end / 1000)}:R>
-
-React 🎉 to join!`
-                );
-
-                await msg.react("🎉");
-
-                db.giveaways[msg.id] = {
-                    entries: []
-                };
-
-                saveDB();
-
-                setTimeout(() => endGiveaway(msg.id, message.channel), ms);
-
-                return;
-            }
-
-            // ---------------- REROLL ----------------
-            if (args[0] === "reroll") {
-                const msgId = args[1];
-                const g = db.giveaways[msgId];
-
-                if (!g) return message.reply("❌ Giveaway not found.");
-                if (!g.entries || g.entries.length === 0) {
-                    return message.reply("❌ No entries.");
-                }
-
-                const winner = g.entries[Math.floor(Math.random() * g.entries.length)];
-
-                return message.channel.send(`🎉 New winner: <@${winner}>`);
-            }
-        }
-
     } catch (err) {
         console.log(err);
     }
 });
-
-// ---------------- REACTIONS ----------------
-client.on("messageReactionAdd", (reaction, user) => {
-    if (user.bot) return;
-
-    const g = db.giveaways[reaction.message.id];
-    if (!g) return;
-
-    if (reaction.emoji.name === "🎉") {
-        if (!g.entries.includes(user.id)) {
-            g.entries.push(user.id);
-            saveDB();
-        }
-    }
-});
-
-// ---------------- GIVEAWAY END ----------------
-function endGiveaway(id, channel) {
-    const g = db.giveaways[id];
-    if (!g) return;
-
-    if (!g.entries.length) {
-        channel.send("❌ No entries.");
-        delete db.giveaways[id];
-        saveDB();
-        return;
-    }
-
-    const winner = g.entries[Math.floor(Math.random() * g.entries.length)];
-
-    channel.send(`🎉 Winner: <@${winner}>`);
-
-    delete db.giveaways[id];
-    saveDB();
-}
-
-// ---------------- DURATION PARSER ----------------
-function parseDuration(str) {
-    if (!str) return null;
-
-    const m = str.match(/(\d+)(s|m|h)/);
-    if (!m) return null;
-
-    const n = parseInt(m[1]);
-
-    if (m[2] === "s") return n * 1000;
-    if (m[2] === "m") return n * 60000;
-    if (m[2] === "h") return n * 3600000;
-
-    return null;
-}
 
 // ---------------- LOGIN ----------------
 client.login(process.env.DISCORD_TOKEN);
