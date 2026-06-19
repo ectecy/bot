@@ -530,49 +530,54 @@ if (cmd === "unlock") {
 
 if (cmd === "hug") {
 
-    const gif = "https://media.tenor.com/4S2Yf5y0p1AAAAAC/hug-anime.gif";
+    const gif = await getGif("anime hug cuddle");
 
-    const embed = new EmbedBuilder()
-        .setColor("Pink")
-        .setDescription(`🤗 ${message.author} hugs ${user || "someone"}`)
-        .setImage(gif);
-
-    return message.channel.send({ embeds: [embed] });
+    return message.channel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Pink")
+                .setDescription(`🤗 ${message.author} hugs ${user || "someone"}`)
+                .setImage(gif || null)
+        ]
+    });
 }
 
 if (cmd === "kiss") {
 
-    const gif = "https://media.tenor.com/3JZ6k2oQxqAAAAAC/anime-kiss.gif";
+    const gif = await getGif("anime kiss");
 
-    const embed = new EmbedBuilder()
-        .setColor("Pink")
-        .setDescription(`💋 ${message.author} kisses ${user || "someone"}`)
-        .setImage(gif);
-
-    return message.channel.send({ embeds: [embed] });
+    return message.channel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Pink")
+                .setDescription(`💋 ${message.author} kisses ${user || "someone"}`)
+                .setImage(gif || null)
+        ]
+    });
 }
 
 if (cmd === "slap") {
 
-    const gif = "https://media.tenor.com/1Qw8k9gH8oAAAAAC/slap-anime.gif";
+    const gif = await getGif("anime slap");
 
-    const embed = new EmbedBuilder()
-        .setColor("Yellow")
-        .setDescription(`👋 ${message.author} slaps ${user || "someone"}`)
-        .setImage(gif);
-
-    return message.channel.send({ embeds: [embed] });
+    return message.channel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Yellow")
+                .setDescription(`👋 ${message.author} slaps ${user || "someone"}`)
+                .setImage(gif || null)
+        ]
+    });
 }
-
+        
 if (cmd === "shoot") {
 
-    const gif =
-        "https://c.tenor.com/8hYg2vX9z1AAAAAC/anime-gun.gif";
+    const gif = await getGif("anime gun shoot");
 
     const embed = new EmbedBuilder()
         .setColor("DarkRed")
         .setDescription(`🔫 ${message.author} shoots ${user || "someone"} 💥`)
-        .setImage(gif)
+        .setImage(gif || null)
         .setTimestamp();
 
     return message.channel.send({ embeds: [embed] });
