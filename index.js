@@ -6,6 +6,10 @@ const {
 
 const PREFIX = ",";
 
+// ---------------- ECONOMY STORAGE ----------------
+const economy = new Map();
+const cooldowns = new Map();
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -15,7 +19,6 @@ const client = new Client({
     ]
 });
 
-// ---------------- READY ----------------
 client.once("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
 });
@@ -33,7 +36,7 @@ client.on("messageCreate", async (message) => {
 
     try {
 
-        // ---------------- HELP ----------------
+        // ---------------- COMMANDS ----------------
         if (cmd === "commands") {
             return message.channel.send(
 `📜 **Commands**
@@ -50,14 +53,16 @@ client.on("messageCreate", async (message) => {
 ,8ball
 
 💰 Economy:
-,balance (fake system)
+,balance
+,work
+,daily
 
 🛡 Moderation:
 ,kick @user
 ,ban @user
 
 🎭 Roles:
-,r create Name
+,r create RoleName
 ,r add @user RoleName
 ,r remove @user RoleName
 
@@ -83,7 +88,7 @@ client.on("messageCreate", async (message) => {
         }
 
         if (cmd === "roll") {
-            return message.channel.send(`🎲 You rolled: ${Math.floor(Math.random() * 100) + 1}`);
+            return message.channel.send(`🎲 You rolled ${Math.floor(Math.random() * 100) + 1}`);
         }
 
         if (cmd === "8ball") {
@@ -91,7 +96,34 @@ client.on("messageCreate", async (message) => {
             return message.channel.send(`🎱 ${answers[Math.floor(Math.random() * answers.length)]}`);
         }
 
-        // ---------------- KICK ----------------
+        // ---------------- ECONOMY ----------------
+        if (cmd === "balance") {
+            const bal = economy.get(message.author.id) || 0;
+            return message.reply(`💰 Balance: $${bal}`);
+        }
+
+        if (cmd === "work") {
+            const amount = Math.floor(Math.random() * 200) + 50;
+            economy.set(message.author.id, (economy.get(message.author.id) || 0) + amount);
+            return message.reply(`💼 You worked and earned $${amount}`);
+        }
+
+        if (cmd === "daily") {
+            const last = cooldowns.get(message.author.id) || 0;
+            const now = Date.now();
+
+            if (now - last < 86400000) {
+                return message.reply("⏳ You already claimed daily today!");
+            }
+
+            const reward = 500;
+            economy.set(message.author.id, (economy.get(message.author.id) || 0) + reward);
+            cooldowns.set(message.author.id, now);
+
+            return message.reply(`🎁 Daily claimed: $${reward}`);
+        }
+
+        // ---------------- MODERATION ----------------
         if (cmd === "kick") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
                 return message.reply("❌ No permission.");
@@ -104,7 +136,6 @@ client.on("messageCreate", async (message) => {
             return message.channel.send(`👢 Kicked ${member.user.tag}`);
         }
 
-        // ---------------- BAN ----------------
         if (cmd === "ban") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
                 return message.reply("❌ No permission.");
@@ -117,7 +148,7 @@ client.on("messageCreate", async (message) => {
             return message.channel.send(`🔨 Banned ${member.user.tag}`);
         }
 
-        // ---------------- ROLES SYSTEM ----------------
+        // ---------------- ROLE SYSTEM ----------------
         if (cmd === "r") {
 
             if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
@@ -129,11 +160,8 @@ client.on("messageCreate", async (message) => {
                 const roleName = args.slice(1).join(" ");
                 if (!roleName) return message.reply("Usage: ,r create RoleName");
 
-                const role = await message.guild.roles.create({
-                    name: roleName
-                });
-
-                return message.channel.send(`🎭 Created role: **${role.name}**`);
+                const role = await message.guild.roles.create({ name: roleName });
+                return message.channel.send(`🎭 Created role: ${role.name}`);
             }
 
             // ADD ROLE
