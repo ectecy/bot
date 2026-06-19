@@ -4,7 +4,7 @@ const fs = require("fs");
 const PREFIX = ",";
 
 /* =========================================================
-   📦 PERSISTENT DATABASE
+   📦 PERSISTENT STORAGE
 ========================================================= */
 
 let db = {
@@ -23,7 +23,7 @@ function saveDB() {
 }
 
 /* =========================================================
-   🤖 CLIENT SETUP
+   🤖 CLIENT
 ========================================================= */
 
 const client = new Client({
@@ -54,7 +54,7 @@ function addXP(userId) {
 }
 
 /* =========================================================
-   🟢 READY EVENT
+   🟢 READY
 ========================================================= */
 
 client.once("ready", () => {
@@ -77,10 +77,10 @@ client.on("messageCreate", async (message) => {
 
     try {
 
-        /* ================= XP SYSTEM ================= */
+        /* ================= XP ================= */
         addXP(message.author.id);
 
-        /* ================= COMMAND LIST ================= */
+        /* ================= COMMANDS ================= */
         if (cmd === "commands") {
             return message.channel.send(
 `📜 **Commands**
@@ -94,6 +94,13 @@ client.on("messageCreate", async (message) => {
 ,kick
 ,ban
 ,unban
+
+🎭 Roles:
+,r create
+,r color
+,r add
+,r remove
+,r delete
 
 🎉 Giveaway:
 ,g create
@@ -115,7 +122,6 @@ client.on("messageCreate", async (message) => {
         if (cmd === "rank") {
             const xp = db.xp[message.author.id] || 0;
             const level = getLevel(xp);
-
             return message.reply(`📊 Level: **${level}** | ⭐ XP: **${xp}**`);
         }
 
@@ -125,9 +131,7 @@ client.on("messageCreate", async (message) => {
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 10);
 
-            if (!sorted.length) {
-                return message.channel.send("❌ No XP data yet.");
-            }
+            if (!sorted.length) return message.channel.send("❌ No XP data yet.");
 
             let msg = "🏆 **LEVEL LEADERBOARD**\n\n";
 
@@ -147,16 +151,14 @@ client.on("messageCreate", async (message) => {
 
         if (cmd === "work") {
             const amount = Math.floor(Math.random() * 200) + 50;
-
             db.economy[message.author.id] =
                 (db.economy[message.author.id] || 0) + amount;
 
             saveDB();
-
             return message.reply(`💼 +$${amount}`);
         }
 
-        /* ================= WARN SYSTEM ================= */
+        /* ================= WARN ================= */
         if (cmd === "warn") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
                 return message.reply("❌ No permission.");
@@ -188,40 +190,29 @@ client.on("messageCreate", async (message) => {
         }
 
         /* ================= MODERATION ================= */
-
         if (cmd === "kick") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
-                return message.reply("❌ You don't have permission to kick members.");
+                return message.reply("❌ No permission.");
             }
-
-            if (!member) return message.reply("❌ Mention a user.");
 
             const target = await message.guild.members.fetch(member.id).catch(() => null);
-            if (!target) return message.reply("❌ User not found in server.");
+            if (!target) return message.reply("❌ User not found.");
+            if (!target.kickable) return message.reply("❌ Cannot kick this user.");
 
-            if (!target.kickable) {
-                return message.reply("❌ I cannot kick this user (role hierarchy).");
-            }
-
-            await target.kick("Kicked via bot command");
+            await target.kick();
             return message.channel.send(`👢 Kicked **${target.user.tag}**`);
         }
 
         if (cmd === "ban") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-                return message.reply("❌ You don't have permission to ban members.");
+                return message.reply("❌ No permission.");
             }
-
-            if (!member) return message.reply("❌ Mention a user.");
 
             const target = await message.guild.members.fetch(member.id).catch(() => null);
-            if (!target) return message.reply("❌ User not found in server.");
+            if (!target) return message.reply("❌ User not found.");
+            if (!target.bannable) return message.reply("❌ Cannot ban this user.");
 
-            if (!target.bannable) {
-                return message.reply("❌ I cannot ban this user (role hierarchy).");
-            }
-
-            await target.ban({ reason: "Banned via bot command" });
+            await target.ban();
             return message.channel.send(`🔨 Banned **${target.user.tag}**`);
         }
 
@@ -242,6 +233,58 @@ client.on("messageCreate", async (message) => {
         if (cmd === "kiss") return message.channel.send(`💋 ${message.author} kisses ${user || "someone"}`);
         if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
         if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
+
+        /* ================= ROLE SYSTEM ================= */
+        if (cmd === "r") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+                return message.reply("❌ No permission.");
+            }
+
+            const sub = args[0];
+
+            if (sub === "create") {
+                const name = args.slice(1).join(" ");
+                const role = await message.guild.roles.create({ name });
+                return message.channel.send(`🎭 Created role **${role.name}**`);
+            }
+
+            if (sub === "color") {
+                const hex = args[1];
+                const roleName = args.slice(2).join(" ");
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+
+                await role.setColor(hex);
+                return message.channel.send(`🎨 Updated color for **${role.name}**`);
+            }
+
+            if (sub === "add") {
+                const target = message.mentions.members.first();
+                const roleName = args.slice(2).join(" ");
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+
+                await target.roles.add(role);
+                return message.channel.send(`➕ Added **${role.name}** to ${target.user.tag}`);
+            }
+
+            if (sub === "remove") {
+                const target = message.mentions.members.first();
+                const roleName = args.slice(2).join(" ");
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+
+                await target.roles.remove(role);
+                return message.channel.send(`➖ Removed **${role.name}** from ${target.user.tag}`);
+            }
+
+            if (sub === "delete") {
+                const roleName = args.slice(1).join(" ");
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+
+                await role.delete();
+                return message.channel.send(`🗑️ Deleted role **${role.name}**`);
+            }
+
+            return message.reply("❌ Usage: create, color, add, remove, delete");
+        }
 
     } catch (err) {
         console.log(err);
