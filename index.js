@@ -1,4 +1,5 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
+require("dotenv").config();
+const { Client, GatewayIntentBits } = require("discord.js");
 
 const client = new Client({
     intents: [
@@ -9,119 +10,91 @@ const client = new Client({
     ]
 });
 
-client.commands = new Collection();
+// load modules
+require("./events/guildMemberRemove")(client);
 
-// -------------------- ANTI-SPAM --------------------
-const cooldown = new Map();
-
-client.on("messageCreate", async (message) => {
-    if (message.author.bot) return;
-
-    const now = Date.now();
-    const last = cooldown.get(message.author.id) || 0;
-
-    if (now - last < 1500) {
-        return message.reply("Stop spamming.");
-    }
-
-    cooldown.set(message.author.id, now);
+client.once("ready", () => {
+    console.log(`Logged in as ${client.user.tag}`);
 });
 
-// -------------------- COMMANDS --------------------
+// ---------------- PREFIX COMMAND HANDLER ----------------
 client.on("messageCreate", async (message) => {
-    if (!message.content.startsWith("!") || message.author.bot) return;
+    if (!message.content.startsWith(",")) return;
+    if (message.author.bot) return;
 
     const args = message.content.slice(1).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
+    const cmd = args.shift().toLowerCase();
 
-    // PING
-    if (command === "ping") {
-        return message.reply("Pong 🏓");
+    // ---------------- ECONOMY ----------------
+    const { getBalance, addBalance } = require("./database");
+
+    if (cmd === "work") {
+        const amount = Math.floor(Math.random() * 200) + 50;
+        addBalance(message.author.id, amount);
+        return message.reply(`💰 You earned $${amount}`);
     }
 
-    // KICK
-    if (command === "kick") {
-        if (!message.member.permissions.has("KickMembers")) {
-            return message.reply("You don't have permission.");
-        }
-
-        const member = message.mentions.members.first();
-        if (!member) return message.reply("Mention a user.");
-
-        await member.kick("Kicked by bot command");
-        message.channel.send(`Kicked ${member.user.tag}`);
+    if (cmd === "balance") {
+        const bal = getBalance(message.author.id);
+        return message.reply(`💳 Balance: $${bal}`);
     }
 
-    // BAN
-    if (command === "ban") {
-        if (!message.member.permissions.has("BanMembers")) {
-            return message.reply("You don't have permission.");
-        }
-
-        const member = message.mentions.members.first();
-        if (!member) return message.reply("Mention a user.");
-
-        await member.ban({ reason: "Banned by bot command" });
-        message.channel.send(`Banned ${member.user.tag}`);
+    if (cmd === "daily") {
+        addBalance(message.author.id, 500);
+        return message.reply("🎁 You claimed $500 daily reward!");
     }
 
-    // PURGE
-    if (command === "purge") {
-        if (!message.member.permissions.has("ManageMessages")) {
-            return message.reply("You don't have permission.");
-        }
+    // ---------------- MODERATION ----------------
+    if (cmd === "kick") {
+        if (!message.member.permissions.has("KickMembers")) return;
+
+        const user = message.mentions.members.first();
+        if (!user) return message.reply("Mention a user.");
+
+        await user.kick();
+        return message.channel.send(`Kicked ${user.user.tag}`);
+    }
+
+    if (cmd === "ban") {
+        if (!message.member.permissions.has("BanMembers")) return;
+
+        const user = message.mentions.members.first();
+        if (!user) return message.reply("Mention a user.");
+
+        await user.ban();
+        return message.channel.send(`Banned ${user.user.tag}`);
+    }
+
+    if (cmd === "purge") {
+        if (!message.member.permissions.has("ManageMessages")) return;
 
         const amount = parseInt(args[0]);
-        if (!amount) return message.reply("Provide a number.");
+        if (!amount) return message.reply("Give number.");
 
         await message.channel.bulkDelete(amount, true);
-        message.channel.send(`Deleted ${amount} messages`).then(m =>
-            setTimeout(() => m.delete(), 3000)
-        );
+        return message.channel.send(`Deleted ${amount} messages`);
     }
 
-    // WORK (simple economy placeholder)
-    if (command === "work") {
-        return message.reply("You worked and earned $100 💰 (add database later)");
-    }
-
-    // BALANCE (placeholder)
-    if (command === "balance") {
-        return message.reply("Your balance system is not connected yet (needs database.js)");
-    }
-
-    // TICKET
-    if (command === "ticket") {
+    // ---------------- TICKET ----------------
+    if (cmd === "ticket") {
         const channel = await message.guild.channels.create({
             name: `ticket-${message.author.username}`,
             permissionOverwrites: [
-                {
-                    id: message.guild.id,
-                    deny: ["ViewChannel"]
-                },
-                {
-                    id: message.author.id,
-                    allow: ["ViewChannel", "SendMessages"]
-                }
+                { id: message.guild.id, deny: ["ViewChannel"] },
+                { id: message.author.id, allow: ["ViewChannel", "SendMessages"] }
             ]
         });
 
-        channel.send(`Hello ${message.author}, support will be with you soon.`);
-        message.reply("Ticket created!");
+        channel.send(`Hello ${message.author}, support will help you soon.`);
+        return message.reply("Ticket created!");
     }
 
-    // CLOSE TICKET
-    if (command === "close") {
+    if (cmd === "close") {
         if (message.channel.name.startsWith("ticket-")) {
-            message.channel.send("Closing ticket...");
+            await message.reply("Closing ticket...");
             setTimeout(() => message.channel.delete(), 2000);
         }
     }
-});
-
-// -------------------- LOGIN --------------------
-client.once("ready", () => {
-    console.log(`Logged in as ${client.user.tag}`);
 });
 
 client.login(process.env.TOKEN);
