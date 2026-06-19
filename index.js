@@ -534,9 +534,14 @@ if (cmd === "hug") {
         return message.reply("❌ Mention someone to hug.");
     }
 
-    return message.channel.send(
-        `🤗 ${message.author} hugs ${member.user}`
-    );
+    const gif = "https://tenor.com/view/cute-gif-14012726895332803373";
+
+    return message.channel.send({
+        content: `🤗 ${message.author} hugs ${member.user}`,
+        embeds: [
+            new EmbedBuilder().setImage(gif)
+        ]
+    });
 }
         
 if (cmd === "kiss") {
