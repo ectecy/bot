@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, PermissionsBitField } = require("discord.js");
 
 const PREFIX = ",";
 
@@ -20,109 +20,108 @@ client.on("messageCreate", async (message) => {
     const user = message.mentions.users.first();
     const member = message.mentions.members.first();
 
-    // ---------------- HELP / COMMANDS ----------------
+    // ---------------- COMMANDS ----------------
     if (cmd === "commands") {
         return message.channel.send(
-`📜 **Commands List**
-\`,commands\` - shows this menu
+`📜 **Commands**
 
 💖 Fun:
-\`,hug @user\`
-\`,kiss @user\`
-\`,slap @user\`
-\`,shoot @user\`
+,hug @user
+,kiss @user
+,slap @user
+,shoot @user
 
 🛡 Moderation:
-\`,kick @user\`
-\`,ban @user\`
+,kick @user
+,ban @user
 
 🎭 Roles:
-\`,r create roleName\`
+,r create RoleName
 `
         );
     }
 
-    // ---------------- HUG ----------------
+    // ---------------- FUN ----------------
     if (cmd === "hug") {
-        if (!user) return message.reply("Mention someone to hug!");
-        return message.channel.send(`🤗 ${message.author} hugs ${user}!`);
+        if (!user) return message.reply("Mention someone!");
+        return message.channel.send(`🤗 ${message.author} hugs ${user}`);
     }
 
-    // ---------------- KISS ----------------
     if (cmd === "kiss") {
-        if (!user) return message.reply("Mention someone to kiss!");
-        return message.channel.send(`💋 ${message.author} kisses ${user}!`);
+        if (!user) return message.reply("Mention someone!");
+        return message.channel.send(`💋 ${message.author} kisses ${user}`);
     }
 
-    // ---------------- SLAP ----------------
     if (cmd === "slap") {
-        if (!user) return message.reply("Mention someone to slap!");
-        return message.channel.send(`👋 ${message.author} slaps ${user}!`);
+        if (!user) return message.reply("Mention someone!");
+        return message.channel.send(`👋 ${message.author} slaps ${user}`);
     }
 
-    // ---------------- SHOOT ----------------
     if (cmd === "shoot") {
-        if (!user) return message.reply("Mention someone to shoot!");
-        return message.channel.send(`🔫 ${message.author} shoots ${user}! *ouch*`);
+        if (!user) return message.reply("Mention someone!");
+        return message.channel.send(`🔫 ${message.author} shoots ${user}`);
     }
 
     // ---------------- KICK ----------------
     if (cmd === "kick") {
-        if (!message.member.permissions.has("KickMembers")) {
-            return message.reply("❌ You don't have permission to kick members.");
+        if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
+            return message.reply("❌ No permission.");
         }
 
-        if (!member) return message.reply("Mention someone to kick!");
+        if (!member) return message.reply("Mention someone.");
         if (!member.kickable) return message.reply("❌ I can't kick this user.");
 
-        await member.kick().catch(() => {});
-        return message.channel.send(`👢 Kicked ${member.user.tag}`);
+        try {
+            await member.kick();
+            return message.channel.send(`👢 Kicked ${member.user.tag}`);
+        } catch (err) {
+            console.log(err);
+            return message.reply("❌ Failed to kick.");
+        }
     }
 
     // ---------------- BAN ----------------
     if (cmd === "ban") {
-        if (!message.member.permissions.has("BanMembers")) {
-            return message.reply("❌ You don't have permission to ban members.");
+        if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+            return message.reply("❌ No permission.");
         }
 
-        if (!member) return message.reply("Mention someone to ban!");
+        if (!member) return message.reply("Mention someone.");
         if (!member.bannable) return message.reply("❌ I can't ban this user.");
 
-        await member.ban().catch(() => {});
-        return message.channel.send(`🔨 Banned ${member.user.tag}`);
+        try {
+            await member.ban();
+            return message.channel.send(`🔨 Banned ${member.user.tag}`);
+        } catch (err) {
+            console.log(err);
+            return message.reply("❌ Failed to ban.");
+        }
     }
 
     // ---------------- ROLE CREATE ----------------
     if (cmd === "r") {
-    if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-        return message.reply("❌ You don't have permission to manage roles.");
-    }
-
-    // ,r create RoleName
-    if (args[0] === "create") {
-        const roleName = args.slice(1).join(" ");
-
-        if (!roleName) {
-            return message.reply("❌ Use: ,r create RoleName");
+        if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+            return message.reply("❌ You need Manage Roles permission.");
         }
 
-        try {
-            const role = await message.guild.roles.create({
-                name: roleName,
-                reason: `Created by ${message.author.tag}`
-            });
+        if (args[0] === "create") {
+            const roleName = args.slice(1).join(" ");
 
-            return message.channel.send(`🎭 Role created: **${role.name}**`);
-        } catch (err) {
-            console.error(err);
-            return message.reply("❌ Failed to create role (check bot permissions).");
-        }
-    }
-}
-}
-            });
+            if (!roleName) {
+                return message.reply("❌ Usage: ,r create RoleName");
+            }
 
-            return message.channel.send(`🎭 Created role: **${roleName}**`);
+            try {
+                const role = await message.guild.roles.create({
+                    name: roleName,
+                    reason: `Created by ${message.author.tag}`
+                });
+
+                return message.channel.send(`🎭 Role created: **${role.name}**`);
+            } catch (err) {
+                console.log(err);
+                return message.reply("❌ Failed to create role (check bot permissions + role hierarchy).");
+            }
         }
     }
 
