@@ -352,9 +352,16 @@ client.on("messageCreate", async (message) => {
 
             const target = await message.guild.members.fetch(member.id).catch(() => null);
 
-            if (!target)
-                return message.reply("❌ User not found.");
-
+            if (!target) {
+    return message.reply({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Red")
+                .setTitle("❌ Error")
+                .setDescription("User not found.")
+        ]
+    });
+}
             if (!target.bannable)
                 return message.reply("❌ Cannot ban this user.");
 
