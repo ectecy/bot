@@ -1,14 +1,15 @@
 const {
     Client,
     GatewayIntentBits,
-    PermissionsBitField
+    PermissionsBitField,
+    ChannelType
 } = require("discord.js");
 
 const fs = require("fs");
 
 const PREFIX = ",";
 
-// ---------------- PERSISTENT STORAGE ----------------
+// ---------------- STORAGE ----------------
 let db = {
     economy: {},
     warns: {},
@@ -67,7 +68,7 @@ client.on("messageCreate", async (message) => {
 
     try {
 
-        // ---------------- XP SYSTEM ----------------
+        // ---------------- XP ----------------
         addXP(message.author.id);
 
         // ---------------- COMMANDS ----------------
@@ -89,6 +90,10 @@ client.on("messageCreate", async (message) => {
 ,r create
 ,r add
 ,r remove
+
+🎫 Tickets:
+,ticket
+,close
 
 📊 Leveling:
 ,rank
@@ -154,14 +159,12 @@ client.on("messageCreate", async (message) => {
 
             if (!member) return message.reply("❌ Mention someone.");
 
-            const reason = args.join(" ") || "No reason";
-
             db.warns[member.id] = (db.warns[member.id] || 0) + 1;
             saveDB();
 
             const count = db.warns[member.id];
 
-            message.channel.send(`⚠️ ${member.user.tag} warned (${count}/4)\nReason: ${reason}`);
+            message.channel.send(`⚠️ ${member.user.tag} warned (${count}/4)`);
 
             if (count >= 4 && member.bannable) {
                 await member.ban({ reason: "4 warns" }).catch(() => {});
@@ -210,51 +213,80 @@ client.on("messageCreate", async (message) => {
         if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
         if (cmd === "shoot") return message.channel.send(`🔫 ${message.author} shoots ${user || "someone"} 💥`);
 
-        // ---------------- ROLE SYSTEM (RESTORED) ----------------
+        // ---------------- ROLE SYSTEM ----------------
         if (cmd === "r") {
 
             if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
                 return message.reply("❌ No permission.");
             }
 
-            // CREATE ROLE
+            // CREATE
             if (args[0] === "create") {
                 const roleName = args.slice(1).join(" ");
-                if (!roleName) return message.reply("Usage: ,r create RoleName");
-
-                const role = await message.guild.roles.create({
-                    name: roleName,
-                    reason: `Created by ${message.author.tag}`
-                });
-
-                return message.channel.send(`🎭 Created role: **${role.name}**`);
+                const role = await message.guild.roles.create({ name: roleName });
+                return message.channel.send(`🎭 Created role: ${role.name}`);
             }
 
-            // ADD ROLE
+            // ADD
             if (args[0] === "add") {
                 const member = message.mentions.members.first();
                 const roleName = args.slice(2).join(" ");
-
                 const role = message.guild.roles.cache.find(r => r.name === roleName);
 
                 if (!member || !role) return message.reply("Usage: ,r add @user RoleName");
 
                 await member.roles.add(role);
-                return message.channel.send(`➕ Added ${role.name} to ${member.user.tag}`);
+                return message.channel.send(`➕ Added role`);
             }
 
-            // REMOVE ROLE
+            // REMOVE
             if (args[0] === "remove") {
                 const member = message.mentions.members.first();
                 const roleName = args.slice(2).join(" ");
-
                 const role = message.guild.roles.cache.find(r => r.name === roleName);
 
                 if (!member || !role) return message.reply("Usage: ,r remove @user RoleName");
 
                 await member.roles.remove(role);
-                return message.channel.send(`➖ Removed ${role.name} from ${member.user.tag}`);
+                return message.channel.send(`➖ Removed role`);
             }
+        }
+
+        // ---------------- TICKET SYSTEM ----------------
+        if (cmd === "ticket") {
+
+            const existing = message.guild.channels.cache.find(
+                c => c.name === `ticket-${message.author.id}`
+            );
+
+            if (existing) return message.reply("🎫 You already have a ticket.");
+
+            const channel = await message.guild.channels.create({
+                name: `ticket-${message.author.id}`,
+                type: ChannelType.GuildText,
+                permissionOverwrites: [
+                    {
+                        id: message.guild.id,
+                        deny: ["ViewChannel"]
+                    },
+                    {
+                        id: message.author.id,
+                        allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"]
+                    }
+                ]
+            });
+
+            channel.send(`🎫 Ticket opened by ${message.author}\nType ,close to close.`);
+            return message.reply(`✅ Ticket created: ${channel}`);
+        }
+
+        if (cmd === "close") {
+            if (!message.channel.name.startsWith("ticket-")) {
+                return message.reply("❌ Not a ticket channel.");
+            }
+
+            await message.channel.send("🔒 Closing ticket...");
+            setTimeout(() => message.channel.delete().catch(() => {}), 3000);
         }
 
     } catch (err) {
