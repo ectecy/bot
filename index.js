@@ -4,7 +4,7 @@ const fs = require("fs");
 const PREFIX = ",";
 
 /* =========================================================
-   📦 PERSISTENT STORAGE
+   📦 DATABASE (PERSISTENT STORAGE)
 ========================================================= */
 
 let db = {
@@ -23,7 +23,7 @@ function saveDB() {
 }
 
 /* =========================================================
-   🤖 CLIENT
+   🤖 CLIENT SETUP
 ========================================================= */
 
 const client = new Client({
@@ -54,7 +54,7 @@ function addXP(userId) {
 }
 
 /* =========================================================
-   🟢 READY
+   🟢 READY EVENT
 ========================================================= */
 
 client.once("ready", () => {
@@ -77,10 +77,10 @@ client.on("messageCreate", async (message) => {
 
     try {
 
-        /* ================= XP ================= */
+        /* ================= XP SYSTEM ================= */
         addXP(message.author.id);
 
-        /* ================= COMMANDS ================= */
+        /* ================= COMMANDS LIST ================= */
         if (cmd === "commands") {
             return message.channel.send(
 `📜 **Commands**
@@ -151,14 +151,16 @@ client.on("messageCreate", async (message) => {
 
         if (cmd === "work") {
             const amount = Math.floor(Math.random() * 200) + 50;
+
             db.economy[message.author.id] =
                 (db.economy[message.author.id] || 0) + amount;
 
             saveDB();
+
             return message.reply(`💼 +$${amount}`);
         }
 
-        /* ================= WARN ================= */
+        /* ================= WARN SYSTEM ================= */
         if (cmd === "warn") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
                 return message.reply("❌ No permission.");
@@ -190,6 +192,7 @@ client.on("messageCreate", async (message) => {
         }
 
         /* ================= MODERATION ================= */
+
         if (cmd === "kick") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
                 return message.reply("❌ No permission.");
