@@ -20,47 +20,50 @@ client.on("messageCreate", async (message) => {
     const user = message.mentions.users.first();
     const member = message.mentions.members.first();
 
-    // ---------------- HELP / COMMANDS ----------------
+    // ---------------- COMMANDS ----------------
     if (cmd === "commands") {
         return message.channel.send(
-📜 **Commands List**
-\,commands` - shows this menu
+`📜 **Commands List**
+
+,commands - shows this menu
 
 💖 Fun:
-`,hug @user`
-`,kiss @user`
-`,slap @user`
-`,shoot @user`
+,hug @user
+,kiss @user
+,slap @user
+,shoot @user
 
 🛡 Moderation:
-`,kick @user` (kick members)
-`,ban @user` (ban members)
+,kick @user
+,ban @user
 
+🏓 Utility:
+,ping`
         );
     }
 
     // ---------------- HUG ----------------
     if (cmd === "hug") {
         if (!user) return message.reply("Mention someone to hug!");
-        return message.channel.send(🤗 ${message.author} hugs ${user}!);
+        return message.channel.send(`🤗 ${message.author} hugs ${user}!`);
     }
 
     // ---------------- KISS ----------------
     if (cmd === "kiss") {
         if (!user) return message.reply("Mention someone to kiss!");
-        return message.channel.send(💋 ${message.author} kisses ${user}!);
+        return message.channel.send(`💋 ${message.author} kisses ${user}!`);
     }
 
     // ---------------- SLAP ----------------
     if (cmd === "slap") {
         if (!user) return message.reply("Mention someone to slap!");
-        return message.channel.send(👋 ${message.author} slaps ${user}!);
+        return message.channel.send(`👋 ${message.author} slaps ${user}!`);
     }
 
     // ---------------- SHOOT ----------------
     if (cmd === "shoot") {
         if (!user) return message.reply("Mention someone to shoot!");
-        return message.channel.send(🔫 ${message.author} shoots ${user}! ouch);
+        return message.channel.send(`🔫 ${message.author} shoots ${user}! ouch`);
     }
 
     // ---------------- KICK ----------------
@@ -73,7 +76,7 @@ client.on("messageCreate", async (message) => {
         if (!member.kickable) return message.reply("❌ I can't kick this user.");
 
         await member.kick().catch(() => {});
-        return message.channel.send(👢 Kicked ${member.user.tag});
+        return message.channel.send(`👢 Kicked ${member.user.tag}`);
     }
 
     // ---------------- BAN ----------------
@@ -86,17 +89,17 @@ client.on("messageCreate", async (message) => {
         if (!member.bannable) return message.reply("❌ I can't ban this user.");
 
         await member.ban().catch(() => {});
-        return message.channel.send(🔨 Banned ${member.user.tag});
+        return message.channel.send(`🔨 Banned ${member.user.tag}`);
     }
 
-    // ---------------- PING (bonus) ----------------
+    // ---------------- PING ----------------
     if (cmd === "ping") {
         return message.reply("🏓 Pong!");
     }
 });
 
 client.once("ready", () => {
-    console.log(Logged in as ${client.user.tag}`);
+    console.log(`Logged in as ${client.user.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
