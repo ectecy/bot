@@ -54,6 +54,29 @@ function addXP(userId) {
 }
 
 /* =========================================================
+   🎉 GIVEAWAYS HELPERS
+========================================================= */
+
+function parseDuration(str) {
+    if (!str) return 0;
+
+    const match = str.match(/^(\d+)(s|m|h|d)$/);
+    if (!match) return 0;
+
+    const time = parseInt(match[1]);
+    const unit = match[2];
+
+    const map = {
+        s: 1000,
+        m: 60000,
+        h: 3600000,
+        d: 86400000
+    };
+
+    return time * map[unit];
+}
+
+/* =========================================================
    🟢 READY
 ========================================================= */
 
@@ -117,101 +140,6 @@ client.on("messageCreate", async (message) => {
             );
         }
 
-        /* ================= GIVEAWAYS (UPDATED) ================= */
-        if (cmd === "g") {
-            const sub = args[0];
-
-            /* ---------- CREATE GIVEAWAY ---------- */
-            if (sub === "create") {
-                const prize = args[1];
-                const duration = args[2];
-                const requirement = args.slice(3).join(" ") || "none";
-
-                if (!prize || !duration) {
-                    return message.reply("❌ Usage: ,g create <prize> <duration(ms)> <requirement|none>");
-                }
-
-                const msg = await message.channel.send(
-`🎉 **GIVEAWAY STARTED**
-
-🎁 Prize: **${prize}**
-⏱ Duration: **${duration}ms**
-🔒 Requirement: **${requirement}**
-👤 Hosted by: ${message.author}
-
-React with 🎉 to enter!`
-                );
-
-                await msg.react("🎉");
-
-                db.giveaways[msg.id] = {
-                    prize,
-                    duration: Number(duration),
-                    requirement,
-                    entries: []
-                };
-
-                saveDB();
-
-                /* ---------- AUTO END ---------- */
-                setTimeout(() => {
-                    const giveaway = db.giveaways[msg.id];
-                    if (!giveaway) return;
-
-                    const entries = giveaway.entries;
-
-                    if (!entries || entries.length === 0) {
-                        message.channel.send("❌ Giveaway ended — no entries.");
-                        delete db.giveaways[msg.id];
-                        saveDB();
-                        return;
-                    }
-
-                    const winner = entries[Math.floor(Math.random() * entries.length)];
-
-                    message.channel.send(
-`🎉 **GIVEAWAY ENDED**
-🏆 Winner: <@${winner}>
-🎁 Prize: **${prize}**`
-                    );
-
-                    delete db.giveaways[msg.id];
-                    saveDB();
-
-                }, Number(duration));
-
-                return;
-            }
-
-            /* ---------- REROLL ---------- */
-            if (sub === "reroll") {
-                const msgId = args[1];
-                const giveaway = db.giveaways[msgId];
-
-                if (!giveaway) return message.reply("❌ Giveaway not found.");
-                if (!giveaway.entries.length) return message.reply("❌ No entries.");
-
-                const winner = giveaway.entries[Math.floor(Math.random() * giveaway.entries.length)];
-
-                return message.channel.send(`🎉 New winner: <@${winner}>`);
-            }
-        }
-
-        /* ================= GIVEAWAY ENTRY TRACKING ================= */
-        client.on("messageReactionAdd", (reaction, user) => {
-            if (user.bot) return;
-
-            const giveaway = db.giveaways[reaction.message.id];
-            if (!giveaway) return;
-
-            if (reaction.emoji.name === "🎉") {
-                if (!giveaway.entries.includes(user.id)) {
-                    giveaway.entries.push(user.id);
-                    saveDB();
-                }
-            }
-        });
-
         /* ================= RANK ================= */
         if (cmd === "rank") {
             const xp = db.xp[message.author.id] || 0;
@@ -245,62 +173,191 @@ React with 🎉 to enter!`
 
         if (cmd === "work") {
             const amount = Math.floor(Math.random() * 200) + 50;
-
             db.economy[message.author.id] =
                 (db.economy[message.author.id] || 0) + amount;
 
             saveDB();
-
             return message.reply(`💼 +$${amount}`);
         }
 
-        /* ================= MODERATION ================= */
-        if (cmd === "warn") {
-            if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-                return message.reply("❌ No permission.");
-            }
-
-            if (!member) return message.reply("❌ Mention someone.");
-
-            const reason = args.join(" ") || "No reason";
-
-            db.warns[member.id] = (db.warns[member.id] || 0) + 1;
-            saveDB();
-
-            message.channel.send(`⚠️ ${member.user.tag} warned`);
-
-            return;
-        }
+        /* ================= MODERATION FIXED ================= */
 
         if (cmd === "kick") {
-            if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
+            if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers))
+                return message.reply("❌ No permission.");
 
-            const target = await message.guild.members.fetch(member.id).catch(() => null);
-            if (!target) return;
+            const target = member;
+            if (!target) return message.reply("❌ Mention a user.");
 
-            await target.kick();
-            return message.channel.send(`👢 Kicked **${target.user.tag}**`);
+            const fetched = await message.guild.members.fetch(target.id).catch(() => null);
+            if (!fetched) return message.reply("❌ User not found.");
+
+            if (!fetched.kickable) return message.reply("❌ Cannot kick this user.");
+
+            await fetched.kick();
+            return message.channel.send(`👢 Kicked **${fetched.user.tag}**`);
         }
 
         if (cmd === "ban") {
-            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
+            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
+                return message.reply("❌ No permission.");
 
-            const target = await message.guild.members.fetch(member.id).catch(() => null);
-            if (!target) return;
+            const target = member;
+            if (!target) return message.reply("❌ Mention a user.");
 
-            await target.ban();
-            return message.channel.send(`🔨 Banned **${target.user.tag}**`);
+            const fetched = await message.guild.members.fetch(target.id).catch(() => null);
+            if (!fetched) return message.reply("❌ User not found.");
+
+            if (!fetched.bannable) return message.reply("❌ Cannot ban this user.");
+
+            await fetched.ban();
+            return message.channel.send(`🔨 Banned **${fetched.user.tag}**`);
         }
 
         if (cmd === "unban") {
-            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
+            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
+                return message.reply("❌ No permission.");
 
             const userId = args[0];
+            if (!userId) return message.reply("Usage: ,unban <userID>");
+
             await message.guild.members.unban(userId);
             return message.channel.send(`✅ Unbanned <@${userId}>`);
         }
 
+        /* ================= ROLE SYSTEM FIXED ================= */
+
+        if (cmd === "r") {
+            if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles))
+                return message.reply("❌ No permission.");
+
+            const sub = args[0];
+
+            if (sub === "create") {
+                const name = args.slice(1).join(" ");
+                if (!name) return message.reply("❌ Role name required.");
+
+                const role = await message.guild.roles.create({ name });
+                return message.channel.send(`🎭 Created **${role.name}**`);
+            }
+
+            if (sub === "color") {
+                const hex = args[1];
+                const roleName = args.slice(2).join(" ");
+
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+                if (!role) return message.reply("❌ Role not found.");
+
+                await role.setColor(hex);
+                return message.channel.send(`🎨 Updated **${role.name}**`);
+            }
+
+            if (sub === "add") {
+                const target = member;
+                const roleName = args.slice(2).join(" ");
+
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+                if (!target || !role) return message.reply("❌ Missing user or role.");
+
+                await target.roles.add(role);
+                return message.channel.send(`➕ Added **${role.name}** to ${target.user.tag}`);
+            }
+
+            if (sub === "remove") {
+                const target = member;
+                const roleName = args.slice(2).join(" ");
+
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+                if (!target || !role) return message.reply("❌ Missing user or role.");
+
+                await target.roles.remove(role);
+                return message.channel.send(`➖ Removed **${role.name}** from ${target.user.tag}`);
+            }
+
+            if (sub === "delete") {
+                const roleName = args.slice(1).join(" ");
+
+                const role = message.guild.roles.cache.find(r => r.name === roleName);
+                if (!role) return message.reply("❌ Role not found.");
+
+                await role.delete();
+                return message.channel.send(`🗑️ Deleted **${role.name}**`);
+            }
+        }
+
+        /* ================= GIVEAWAYS FIXED ================= */
+
+        if (cmd === "g") {
+            const sub = args[0];
+
+            if (sub === "create") {
+                const duration = args[1];
+                const prize = args[2];
+                const requirement = args.slice(3).join(" ") || "None";
+
+                if (!duration || !prize)
+                    return message.reply("Usage: ,g create <time> <prize> [requirement]");
+
+                const ms = parseDuration(duration);
+                if (!ms) return message.reply("❌ Invalid duration (s/m/h/d)");
+
+                const giveawayId = Date.now().toString();
+
+                const msg = await message.channel.send(
+`🎉 **GIVEAWAY**
+Prize: **${prize}**
+Requirement: ${requirement}
+Ends in: ${duration}
+
+React 🎉 to enter!`
+                );
+
+                await msg.react("🎉");
+
+                db.giveaways[giveawayId] = {
+                    messageId: msg.id,
+                    channelId: message.channel.id,
+                    prize,
+                    endsAt: Date.now() + ms
+                };
+
+                saveDB();
+
+                setTimeout(async () => {
+                    const fetched = await message.channel.messages.fetch(msg.id).catch(() => null);
+                    if (!fetched) return;
+
+                    const users = await fetched.reactions.cache.get("🎉")?.users.fetch();
+                    if (!users) return;
+
+                    const valid = users.filter(u => !u.bot);
+                    const winner = valid.random();
+
+                    if (winner) {
+                        message.channel.send(`🏆 Winner: ${winner} won **${prize}**`);
+                    }
+                }, ms);
+            }
+
+            if (sub === "reroll") {
+                const messageId = args[1];
+                if (!messageId) return message.reply("Usage: ,g reroll <messageId>");
+
+                const msg = await message.channel.messages.fetch(messageId).catch(() => null);
+                if (!msg) return message.reply("❌ Giveaway not found.");
+
+                const users = await msg.reactions.cache.get("🎉")?.users.fetch();
+                const valid = users?.filter(u => !u.bot);
+
+                const winner = valid?.random();
+                if (!winner) return message.reply("❌ No valid entries.");
+
+                return message.channel.send(`🔁 New winner: ${winner}`);
+            }
+        }
+
         /* ================= FUN ================= */
+
         if (cmd === "hug") return message.channel.send(`🤗 ${message.author} hugs ${user || "someone"}`);
         if (cmd === "kiss") return message.channel.send(`💋 ${message.author} kisses ${user || "someone"}`);
         if (cmd === "slap") return message.channel.send(`👋 ${message.author} slaps ${user || "someone"}`);
