@@ -567,7 +567,7 @@ if (cmd === "slap") {
     }
 
     const gifs = [
-        "https://tenor.com/view/girl-slap-anime-mad-student-gif-17423278",
+        "https://images-ext-1.discordapp.net/external/OLmWWwnlAKonK3vrZKAd505N3RpjncLVABAoz_rBBhE/https/nekos.best/api/v2/slap/facb4ca9-b269-4b88-b72d-f99416546bfb.gif",
         "https://tenor.com/view/no-angry-anime-slap-gif-7355956"
     ];
 
