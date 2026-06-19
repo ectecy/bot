@@ -568,7 +568,7 @@ if (cmd === "slap") {
 
     const gifs = [
         "https://images-ext-1.discordapp.net/external/OLmWWwnlAKonK3vrZKAd505N3RpjncLVABAoz_rBBhE/https/nekos.best/api/v2/slap/facb4ca9-b269-4b88-b72d-f99416546bfb.gif",
-        "https://tenor.com/view/no-angry-anime-slap-gif-7355956"
+        "https://images-ext-1.discordapp.net/external/hAwJolPkYUKvbR1a-O2CCHGLb_GGDC8PtrnsNRev3lI/https/nekos.best/api/v2/slap/6fdd5bd2-19d1-4c6e-9f61-d6209f1625ba.gif"
     ];
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
