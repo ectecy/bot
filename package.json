@@ -1,0 +1,23 @@
+{
+  "name": "greed-style-bot",
+  "version": "1.0.0",
+  "description": "A Discord bot with moderation, economy, and ticket system (Greed-style)",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "discord-bot",
+    "moderation",
+    "economy"
+  ],
+  "author": "your-name",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.0.0",
+    "better-sqlite3": "^11.0.0"
+  }
+}
