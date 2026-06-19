@@ -2,18 +2,17 @@ const {
     Client,
     GatewayIntentBits,
     PermissionsBitField,
-    ChannelType
+    EmbedBuilder
 } = require("discord.js");
 
 const fs = require("fs");
 
 const PREFIX = ",";
 
-// ---------------- STORAGE ----------------
+// ---------------- DATABASE ----------------
 let db = {
     economy: {},
     warns: {},
-    giveaways: {},
     xp: {}
 };
 
@@ -31,80 +30,83 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessageReactions
+        GatewayIntentBits.GuildMembers
     ]
 });
 
-// ---------------- LEVEL SYSTEM ----------------
+// ---------------- CONFIG ----------------
+const COLORS = {
+    main: 0x5865F2,
+    success: 0x57F287,
+    danger: 0xED4245,
+    warn: 0xFEE75C,
+    info: 0x2F3136
+};
+
+// ---------------- XP SYSTEM ----------------
 function getLevel(xp) {
     return Math.floor(Math.sqrt(xp / 100));
 }
 
 function addXP(userId) {
     const gain = Math.floor(Math.random() * 11) + 5;
-
-    if (!db.xp[userId]) db.xp[userId] = 0;
-    db.xp[userId] += gain;
-
-    saveDB();
+    db.xp[userId] = (db.xp[userId] || 0) + gain;
 }
 
 // ---------------- READY ----------------
 client.once("ready", () => {
-    console.log(`Logged in as ${client.user.tag}`);
+    console.log(`[READY] Logged in as ${client.user.tag}`);
 });
 
-// ---------------- MESSAGE ----------------
+// ---------------- MESSAGE HANDLER ----------------
 client.on("messageCreate", async (message) => {
-    if (message.author.bot || !message.guild) return;
+    if (!message.guild || message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const cmd = (args.shift() || "").toLowerCase();
 
-    const user = message.mentions.users.first();
     const member = message.mentions.members.first();
+    const user = message.mentions.users.first();
+
+    addXP(message.author.id);
+    saveDB();
 
     try {
 
-        // ---------------- XP ----------------
-        addXP(message.author.id);
-
-        // ---------------- COMMANDS ----------------
+        // ---------------- HELP ----------------
         if (cmd === "commands") {
-            return message.channel.send(
-`📜 **Commands**
-
-💰 Economy:
-,balance
-,work
-
-⚠️ Moderation:
-,warn
-,kick
-,ban
-,unban
-
-🎭 Roles:
-,r create
-,r add
-,r remove
-
-🎫 Tickets:
-,ticket
-,close
-
-📊 Leveling:
-,rank
-,g.m
-
-💖 Fun:
-,hug
-,kiss
-,slap
-,shoot`
-            );
+            return message.channel.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(COLORS.main)
+                        .setTitle("📘 Command Reference")
+                        .setDescription("Prefix: `,`")
+                        .addFields(
+                            {
+                                name: "💖 Fun",
+                                value: "`hug`, `kiss`, `slap`, `shoot`"
+                            },
+                            {
+                                name: "💰 Economy",
+                                value: "`balance`, `work`"
+                            },
+                            {
+                                name: "📊 Leveling",
+                                value: "`rank`, `g.m`"
+                            },
+                            {
+                                name: "🛡 Moderation",
+                                value: "`warn`, `kick`, `ban`, `unban`"
+                            },
+                            {
+                                name: "🎭 Roles",
+                                value: "`r create`, `r add`, `r remove`"
+                            }
+                        )
+                        .setFooter({ text: "Professional Bot System" })
+                ]
+            });
         }
 
         // ---------------- RANK ----------------
@@ -112,32 +114,51 @@ client.on("messageCreate", async (message) => {
             const xp = db.xp[message.author.id] || 0;
             const level = getLevel(xp);
 
-            return message.reply(`📊 Level: **${level}** | ⭐ XP: **${xp}**`);
+            return message.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(COLORS.main)
+                        .setTitle("📊 User Profile")
+                        .addFields(
+                            { name: "Level", value: `${level}`, inline: true },
+                            { name: "XP", value: `${xp}`, inline: true }
+                        )
+                ]
+            });
         }
 
         // ---------------- LEADERBOARD ----------------
         if (cmd === "g.m") {
-
             const sorted = Object.entries(db.xp)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 10);
 
-            if (!sorted.length) return message.channel.send("❌ No XP data yet.");
-
-            let msg = "🏆 **LEVEL LEADERBOARD**\n\n";
-
-            sorted.forEach((u, i) => {
-                const xp = u[1];
-                const level = getLevel(xp);
-                msg += `${i + 1}. <@${u[0]}> — Level ${level} (${xp} XP)\n`;
+            return message.channel.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(0xF1C40F)
+                        .setTitle("🏆 Global Leaderboard")
+                        .setDescription(
+                            sorted.length
+                                ? sorted.map((u, i) =>
+                                    `**${i + 1}.** <@${u[0]}> — Level ${getLevel(u[1])} (${u[1]} XP)`
+                                  ).join("\n")
+                                : "No data available."
+                        )
+                ]
             });
-
-            return message.channel.send(msg);
         }
 
         // ---------------- ECONOMY ----------------
         if (cmd === "balance") {
-            return message.reply(`💰 $${db.economy[message.author.id] || 0}`);
+            return message.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(COLORS.success)
+                        .setTitle("💰 Wallet")
+                        .setDescription(`Balance: **$${db.economy[message.author.id] || 0}**`)
+                ]
+            });
         }
 
         if (cmd === "work") {
@@ -148,29 +169,44 @@ client.on("messageCreate", async (message) => {
 
             saveDB();
 
-            return message.reply(`💼 +$${amount}`);
+            return message.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(COLORS.success)
+                        .setDescription(`💼 Earned **$${amount}**`)
+                ]
+            });
         }
 
-        // ---------------- WARN ----------------
+        // ---------------- WARN SYSTEM ----------------
         if (cmd === "warn") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-                return message.reply("❌ No permission.");
+                return message.reply("❌ Missing permissions.");
             }
 
-            if (!member) return message.reply("❌ Mention someone.");
+            if (!member) return message.reply("❌ Mention a user.");
 
             db.warns[member.id] = (db.warns[member.id] || 0) + 1;
             saveDB();
 
             const count = db.warns[member.id];
 
-            message.channel.send(`⚠️ ${member.user.tag} warned (${count}/4)`);
+            message.channel.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(COLORS.warn)
+                        .setTitle("⚠️ User Warned")
+                        .setDescription(`${member.user.tag} has been warned`)
+                        .addFields(
+                            { name: "Total Warnings", value: `${count}/4` }
+                        )
+                ]
+            });
 
             if (count >= 4 && member.bannable) {
-                await member.ban({ reason: "4 warns" }).catch(() => {});
+                await member.ban({ reason: "4 warnings reached" });
                 db.warns[member.id] = 0;
                 saveDB();
-                message.channel.send(`🔨 Auto-banned ${member.user.tag}`);
             }
         }
 
@@ -179,31 +215,48 @@ client.on("messageCreate", async (message) => {
             if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
             if (!member) return;
 
-            await member.kick().catch(() => {});
-            return message.channel.send(`👢 Kicked ${member.user.tag}`);
+            await member.kick();
+
+            return message.channel.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(COLORS.danger)
+                        .setDescription(`👢 Kicked **${member.user.tag}**`)
+                ]
+            });
         }
 
         if (cmd === "ban") {
             if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
             if (!member) return;
 
-            await member.ban().catch(() => {});
-            return message.channel.send(`🔨 Banned ${member.user.tag}`);
+            await member.ban();
+
+            return message.channel.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(COLORS.danger)
+                        .setDescription(`🔨 Banned **${member.user.tag}**`)
+                ]
+            });
         }
 
         if (cmd === "unban") {
-            if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-                return message.reply("❌ No permission.");
-            }
-
-            const userId = args[0];
-            if (!userId) return message.reply("Usage: ,unban <userID>");
+            const id = args[0];
+            if (!id) return message.reply("Usage: ,unban <userID>");
 
             try {
-                await message.guild.members.unban(userId);
-                return message.channel.send(`✅ Unbanned <@${userId}>`);
+                await message.guild.members.unban(id);
+
+                return message.channel.send({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(COLORS.success)
+                            .setDescription(`✅ Unbanned <@${id}>`)
+                    ]
+                });
             } catch {
-                return message.reply("❌ Could not unban user.");
+                return message.reply("❌ Failed to unban.");
             }
         }
 
@@ -217,80 +270,45 @@ client.on("messageCreate", async (message) => {
         if (cmd === "r") {
 
             if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-                return message.reply("❌ No permission.");
+                return message.reply("❌ Missing permissions.");
             }
 
-            // CREATE
             if (args[0] === "create") {
-                const roleName = args.slice(1).join(" ");
-                const role = await message.guild.roles.create({ name: roleName });
-                return message.channel.send(`🎭 Created role: ${role.name}`);
+                const name = args.slice(1).join(" ");
+                const role = await message.guild.roles.create({ name });
+
+                return message.channel.send({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(COLORS.success)
+                            .setDescription(`🎭 Created role **${role.name}**`)
+                    ]
+                });
             }
 
-            // ADD
             if (args[0] === "add") {
-                const member = message.mentions.members.first();
                 const roleName = args.slice(2).join(" ");
                 const role = message.guild.roles.cache.find(r => r.name === roleName);
 
-                if (!member || !role) return message.reply("Usage: ,r add @user RoleName");
+                if (!member || !role) return message.reply("Invalid usage.");
 
                 await member.roles.add(role);
-                return message.channel.send(`➕ Added role`);
+                return message.channel.send(`➕ Role assigned`);
             }
 
-            // REMOVE
             if (args[0] === "remove") {
-                const member = message.mentions.members.first();
                 const roleName = args.slice(2).join(" ");
                 const role = message.guild.roles.cache.find(r => r.name === roleName);
 
-                if (!member || !role) return message.reply("Usage: ,r remove @user RoleName");
+                if (!member || !role) return message.reply("Invalid usage.");
 
                 await member.roles.remove(role);
-                return message.channel.send(`➖ Removed role`);
+                return message.channel.send(`➖ Role removed`);
             }
-        }
-
-        // ---------------- TICKET SYSTEM ----------------
-        if (cmd === "ticket") {
-
-            const existing = message.guild.channels.cache.find(
-                c => c.name === `ticket-${message.author.id}`
-            );
-
-            if (existing) return message.reply("🎫 You already have a ticket.");
-
-            const channel = await message.guild.channels.create({
-                name: `ticket-${message.author.id}`,
-                type: ChannelType.GuildText,
-                permissionOverwrites: [
-                    {
-                        id: message.guild.id,
-                        deny: ["ViewChannel"]
-                    },
-                    {
-                        id: message.author.id,
-                        allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"]
-                    }
-                ]
-            });
-
-            channel.send(`🎫 Ticket opened by ${message.author}\nType ,close to close.`);
-            return message.reply(`✅ Ticket created: ${channel}`);
-        }
-
-        if (cmd === "close") {
-            if (!message.channel.name.startsWith("ticket-")) {
-                return message.reply("❌ Not a ticket channel.");
-            }
-
-            await message.channel.send("🔒 Closing ticket...");
-            setTimeout(() => message.channel.delete().catch(() => {}), 3000);
         }
 
     } catch (err) {
-        console.log(err);
+        console.log("[ERROR]", err);
     }
 });
 
