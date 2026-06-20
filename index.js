@@ -133,7 +133,7 @@ client.on("messageCreate", async (message) => {
                     {
                         name: "💖 Fun",
                         value:
-                        ",kiss `\n` ,slap `\n` ,shoot `",
+                        " ,kiss `\n` ,slap `\n` ,shoot `",
                         inline: true
                     }
                 )
