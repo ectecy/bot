@@ -530,11 +530,10 @@ if (cmd === "unlock") {
 
 if (cmd === "hug") {
 
-    const member = message.mentions.members?.first();
-    const user = message.mentions.users?.first();
+    const target = message.mentions.users.first();
 
-    if (!member || !user) {
-        return message.reply("❌ Mention a user like: ,hug @user");
+    if (!target) {
+        return message.reply("❌ Mention someone like: ,hug @user");
     }
 
     const gifs = [
@@ -550,7 +549,7 @@ if (cmd === "hug") {
         embeds: [
             new EmbedBuilder()
                 .setColor("Pink")
-                .setDescription(`🤗 ${message.author} hugs ${user}`)
+                .setDescription(`🤗 ${message.author} hugs ${target}`)
                 .setImage(gif)
         ]
     });
@@ -558,11 +557,10 @@ if (cmd === "hug") {
         
 if (cmd === "kiss") {
 
-    const member = message.mentions.members?.first();
-    const user = message.mentions.users?.first();
+    const target = message.mentions.users.first();
 
-    if (!member || !user) {
-        return message.reply("❌ Mention a user like: ,kiss @user");
+    if (!target) {
+        return message.reply("❌ Mention someone like: ,kiss @user");
     }
 
     const gifs = [
@@ -578,7 +576,7 @@ if (cmd === "kiss") {
         embeds: [
             new EmbedBuilder()
                 .setColor("Pink")
-                .setDescription(`💋 ${message.author} kisses ${user}`)
+                .setDescription(`💋 ${message.author} kisses ${target}`)
                 .setImage(gif)
         ]
     });
