@@ -527,32 +527,6 @@ if (cmd === "unlock") {
        /* =================================================
    💖 FUN COMMANDS (WITH GIFS)
 ================================================= */
-
-if (cmd === "hug") {
-    console.log("HUG TRIGGERED");
-
-    const target = message.mentions.members.first();
-
-    if (!target)
-        return message.reply("❌ Mention someone like: ,hug @user");
-
-    const gifs = [
-        "https://images-ext-1.discordapp.net/external/_cgFjM_9UiGfG4IgQRlXbKFYYmHguUWhkbZlWw9pt2s/https/nekos.best/api/v2/hug/01b8d0bb-827b-49ed-a538-c109ee5883e1.gif",
-        "https://images-ext-1.discordapp.net/external/eRYiZabajb-add7P4V4XrTJZL01or6Izr6sSd_1y7z4/https/nekos.best/api/v2/hug/c08992e3-ec9c-4cf4-88d0-6ca921d3ef64.gif",
-        "https://images-ext-1.discordapp.net/external/EmtO43xHdJSevgT2Z_o1ii9pkIWp6xx4wiG5Zok35zY/https/nekos.best/api/v2/hug/63af9168-20da-42f8-a3f3-0299743f513c.gif"
-    ];
-
-    const gif = gifs[Math.floor(Math.random() * gifs.length)];
-
-    return message.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`🤗 ${message.author} hugs ${target.user}`)
-                .setImage(gif)
-        ]
-    });
-}
         
 if (cmd === "kiss") {
     const target = message.mentions.members.first();
