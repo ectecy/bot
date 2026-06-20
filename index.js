@@ -530,16 +530,16 @@ if (cmd === "unlock") {
 
 if (cmd === "hug") {
 
-    const targetUser = message.mentions.users.first();
-    if (!targetUser)
+    const user = message.mentions.users.first();
+    if (!user)
         return message.reply("❌ Mention someone like: ,hug @user");
 
-    if (targetUser.id === message.author.id)
+    if (user.id === message.author.id)
         return message.reply("🤗 You hug yourself... wholesome.");
 
-    const targetMember = await message.guild.members.fetch(targetUser.id).catch(() => null);
-    if (!targetMember)
-        return message.reply("❌ User not found in server.");
+    const member = await message.guild.members.fetch(user.id).catch(() => null);
+    if (!member)
+        return message.reply("❌ That user is not in this server.");
 
     const gifs = [
         "https://images-ext-1.discordapp.net/external/_cgFjM_9UiGfG4IgQRlXbKFYYmHguUWhkbZlWw9pt2s/https/nekos.best/api/v2/hug/01b8d0bb-827b-49ed-a538-c109ee5883e1.gif",
@@ -553,7 +553,7 @@ if (cmd === "hug") {
         embeds: [
             new EmbedBuilder()
                 .setColor("Pink")
-                .setDescription(`🤗 ${message.author} hugs ${targetMember.user}`)
+                .setDescription(`🤗 ${message.author} hugs ${member.user}`)
                 .setImage(gif)
         ]
     });
