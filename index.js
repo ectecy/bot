@@ -530,16 +530,13 @@ if (cmd === "unlock") {
 
 if (cmd === "hug") {
 
-    const user = message.mentions.users.first();
-    if (!user)
+    const target = message.mentions.members.first();
+
+    if (!target)
         return message.reply("❌ Mention someone like: ,hug @user");
 
-    if (user.id === message.author.id)
+    if (target.id === message.author.id)
         return message.reply("🤗 You hug yourself... wholesome.");
-
-    const member = await message.guild.members.fetch(user.id).catch(() => null);
-    if (!member)
-        return message.reply("❌ That user is not in this server.");
 
     const gifs = [
         "https://images-ext-1.discordapp.net/external/_cgFjM_9UiGfG4IgQRlXbKFYYmHguUWhkbZlWw9pt2s/https/nekos.best/api/v2/hug/01b8d0bb-827b-49ed-a538-c109ee5883e1.gif",
@@ -549,14 +546,12 @@ if (cmd === "hug") {
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
 
-    return message.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`🤗 ${message.author} hugs ${member.user}`)
-                .setImage(gif)
-        ]
-    });
+    const embed = new EmbedBuilder()
+        .setColor("Pink")
+        .setDescription(`🤗 ${message.author} hugs ${target.user}`)
+        .setImage(gif);
+
+    return message.channel.send({ embeds: [embed] });
 }
         
 if (cmd === "kiss") {
