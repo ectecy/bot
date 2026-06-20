@@ -530,11 +530,11 @@ if (cmd === "unlock") {
 
 if (cmd === "hug") {
 
-    const target = message.mentions.users.first();
+    const member = message.mentions.members.first();
+    const user = message.mentions.users.first();
 
-    if (!target) {
+    if (!member || !user)
         return message.reply("❌ Mention someone like: ,hug @user");
-    }
 
     const gifs = [
         "https://images-ext-1.discordapp.net/external/eRYiZabajb-add7P4V4XrTJZL01or6Izr6sSd_1y7z4/https/nekos.best/api/v2/hug/c08992e3-ec9c-4cf4-88d0-6ca921d3ef64.gif",
@@ -545,23 +545,21 @@ if (cmd === "hug") {
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
 
-    return message.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`🤗 ${message.author} hugs ${target}`)
-                .setImage(gif)
-        ]
-    });
+    const embed = new EmbedBuilder()
+        .setColor("Pink")
+        .setDescription(`🤗 ${message.author} hugs ${member.user}`)
+        .setImage(gif);
+
+    return message.channel.send({ embeds: [embed] });
 }
         
 if (cmd === "kiss") {
 
-    const target = message.mentions.users.first();
+    const member = message.mentions.members.first();
+    const user = message.mentions.users.first();
 
-    if (!target) {
+    if (!member || !user)
         return message.reply("❌ Mention someone like: ,kiss @user");
-    }
 
     const gifs = [
         "https://images-ext-1.discordapp.net/external/0m4Oy_Ijxw91S72KgCtOk_izKq3QgYccyOFt3SxmVX8/https/nekos.best/api/v2/kiss/ec4ea38c-2433-478b-83fd-897e7c750111.gif",
@@ -572,14 +570,12 @@ if (cmd === "kiss") {
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
 
-    return message.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`💋 ${message.author} kisses ${target}`)
-                .setImage(gif)
-        ]
-    });
+    const embed = new EmbedBuilder()
+        .setColor("Pink")
+        .setDescription(`💋 ${message.author} kisses ${member.user}`)
+        .setImage(gif);
+
+    return message.channel.send({ embeds: [embed] });
 }
         
 if (cmd === "slap") {
