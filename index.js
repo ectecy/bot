@@ -75,8 +75,8 @@ client.on("messageCreate", async (message) => {
 
     if (!message.guild || message.author.bot) return;
 
-    // ✅ AFK RETURN CHECK (PUT HERE)
-    if (db.afk[message.author.id]) {
+    // ✅ PUT AFK SYSTEM HERE (REPLACE OLD ONE)
+    if (db.afk[message.author.id] && !message.content.startsWith(PREFIX)) {
 
         const data = db.afk[message.author.id];
         delete db.afk[message.author.id];
@@ -94,6 +94,9 @@ client.on("messageCreate", async (message) => {
             ]
         });
     }
+
+    // 👇 KEEP EVERYTHING BELOW EXACTLY THE SAME
+    if (!message.content.startsWith(PREFIX)) return;
     
     if (!message.content.startsWith(PREFIX)) return;
 
