@@ -534,7 +534,7 @@ if (cmd === "hug") {
     const user = message.mentions.users?.first();
 
     if (!member || !user) {
-        return message.reply("❌ Mention a user like: `,hug @user`");
+        return message.reply("❌ Mention a user like: ,hug @user");
     }
 
     const gifs = [
@@ -546,13 +546,14 @@ if (cmd === "hug") {
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
 
-    const embed = new EmbedBuilder()
-        .setColor("Pink")
-        .setDescription(`🤗 ${message.author} hugs ${user} 💞`)
-        .setImage(gif)
-        .setTimestamp();
-
-    return message.channel.send({ embeds: [embed] });
+    return message.channel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Pink")
+                .setDescription(`🤗 ${message.author} hugs ${user}`)
+                .setImage(gif)
+        ]
+    });
 }
         
 if (cmd === "kiss") {
@@ -561,7 +562,7 @@ if (cmd === "kiss") {
     const user = message.mentions.users?.first();
 
     if (!member || !user) {
-        return message.reply("❌ Mention a user like: `,kiss @user`");
+        return message.reply("❌ Mention a user like: ,kiss @user");
     }
 
     const gifs = [
@@ -573,12 +574,14 @@ if (cmd === "kiss") {
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
 
-    const embed = new EmbedBuilder()
-        .setColor("Pink")
-        .setDescription(`💋 ${message.author} kisses ${user}`)
-        .setImage(gif);
-
-    return message.channel.send({ embeds: [embed] });
+    return message.channel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Pink")
+                .setDescription(`💋 ${message.author} kisses ${user}`)
+                .setImage(gif)
+        ]
+    });
 }
         
 if (cmd === "slap") {
