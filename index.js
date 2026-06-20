@@ -529,7 +529,9 @@ if (cmd === "unlock") {
 ================================================= */
 
 if (cmd === "hug") {
-    const target = message.mentions.members.first();
+    const target =
+        message.mentions.members.first() ||
+        message.guild.members.cache.get(args[0]);
 
     if (!target)
         return message.reply("❌ Mention someone like: ,hug @user");
