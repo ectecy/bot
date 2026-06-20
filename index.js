@@ -529,52 +529,47 @@ if (cmd === "unlock") {
 ================================================= */
 
 if (cmd === "hug") {
-
     const target = message.mentions.members.first();
-    if (!target) return message.reply("❌ Mention someone like: ,hug @user");
+
+    if (!target)
+        return message.reply("❌ Mention someone like: ,hug @user");
+
+    if (target.id === message.author.id)
+        return message.reply("🤨 You can't hug yourself!");
 
     const gifs = [
         "https://media.tenor.com/4Y9x9qX1g2AAAAAC/anime-hug.gif",
-        "https://media.tenor.com/8Hc1v3Y5yJgAAAAC/hug-anime.gif",
-        "https://media.tenor.com/1l3xQwZy2m8AAAAC/cute-hug.gif"
+        "https://media.tenor.com/0dJ6X3Q3h3UAAAAC/hug-anime.gif",
+        "https://media.tenor.com/y0zQ9g1hGq4AAAAC/cute-hug.gif"
     ];
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
 
-    return message.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`🤗 ${message.author} hugs ${target.user}`)
-                .setImage(gif)
-        ]
-    });
+    const embed = new EmbedBuilder()
+        .setColor("Pink")
+        .setDescription(`🤗 ${message.author} hugs ${target.user}`)
+        .setImage(gif)
+        .setTimestamp();
+
+    return message.channel.send({ embeds: [embed] });
 }
         
 if (cmd === "kiss") {
-
     const target = message.mentions.members.first();
 
-    if (!target) {
-        return message.reply({
-            content: "❌ Please mention someone to kiss.\nExample: ,kiss @user"
-        });
-    }
+    if (!target)
+        return message.reply("❌ Mention someone like: ,kiss @user");
 
-    if (target.id === message.author.id) {
+    if (target.id === message.author.id)
         return message.reply("💀 You can't kiss yourself!");
-    }
 
-    if (target.user.bot) {
-        return message.reply("🤖 Bots don't need kisses!");
-    }
+    if (target.user.bot)
+        return message.reply("🤖 You can't kiss bots!");
 
     const gifs = [
         "https://media.tenor.com/0m4Oy_Ijxw91S72KgCtOk_kiss.gif",
-        "https://media.tenor.com/a24dd374-kiss.gif",
-        "https://media.tenor.com/265e12ad-kiss.gif",
-        "https://media.tenor.com/7XqwsL8K9jMAAAAC/anime-kiss.gif",
-        "https://media.tenor.com/QM9Q4QbWlU8AAAAC/kiss-anime.gif"
+        "https://media.tenor.com/3pX8kqK8aZAAAAAC/anime-kiss.gif",
+        "https://media.tenor.com/7XqwsL8K9jMAAAAC/kiss-anime.gif"
     ];
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
@@ -582,13 +577,9 @@ if (cmd === "kiss") {
     const embed = new EmbedBuilder()
         .setColor("#FF69B4")
         .setTitle("💋 Kiss!")
-        .setDescription(💖 ${message.author} kisses ${target.user}!)
+        .setDescription(`💖 ${message.author} kisses ${target.user}`)
         .setImage(gif)
-        .setTimestamp()
-        .setFooter({
-            text: Requested by ${message.author.username},
-            iconURL: message.author.displayAvatarURL()
-        });
+        .setTimestamp();
 
     return message.channel.send({ embeds: [embed] });
 }
