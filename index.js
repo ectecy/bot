@@ -21,6 +21,8 @@ let db = {
 
 if (fs.existsSync("./data.json")) {
     db = JSON.parse(fs.readFileSync("./data.json", "utf8"));
+    const member = message.mentions.members.first();
+const user = message.mentions.users.first();
 }
 
 function saveDB() {
@@ -67,6 +69,8 @@ client.once("ready", () => {
     console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
+if (!message.guild || message.author.bot) return;
+if (!message.content) return;
 /* =========================================================
    💬 MESSAGE HANDLER
 ========================================================= */
@@ -76,20 +80,20 @@ client.on("messageCreate", async (message) => {
 
     // AFK RETURN (must be BEFORE prefix check)
     if (db.afk[message.author.id] && !message.content.startsWith(PREFIX)) {
-        const data = db.afk[message.author.id];
-        delete db.afk[message.author.id];
-        saveDB();
+    const data = db.afk[message.author.id];
+    delete db.afk[message.author.id];
+    saveDB();
 
-        return message.channel.send({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor("Green")
-                    .setTitle("👋 Welcome back!")
-                    .setDescription(`${message.author} is no longer AFK`)
-                    .addFields({ name: "AFK Reason", value: data.reason })
-            ]
-        });
-    }
+    return message.channel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Green")
+                .setTitle("👋 Welcome back!")
+                .setDescription(`${message.author} is no longer AFK`)
+                .addFields({ name: "AFK Reason", value: data.reason })
+        ]
+    });
+}
 
     // PREFIX CHECK (ONLY ONCE)
     if (!message.content.startsWith(PREFIX)) return;
