@@ -72,25 +72,29 @@ client.once("ready", () => {
 ========================================================= */
 
 client.on("messageCreate", async (message) => {
+
     if (!message.guild || message.author.bot) return;
+
+    // ✅ AFK RETURN CHECK (PUT HERE)
     if (db.afk[message.author.id]) {
 
-    const data = db.afk[message.author.id];
-    delete db.afk[message.author.id];
-    saveDB();
+        const data = db.afk[message.author.id];
+        delete db.afk[message.author.id];
+        saveDB();
 
-    return message.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor("Green")
-                .setTitle("👋 Welcome back!")
-                .setDescription(`${message.author} is no longer AFK`)
-                .addFields(
-                    { name: "AFK Reason", value: data.reason }
-                )
-        ]
-    });
-}
+        return message.channel.send({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor("Green")
+                    .setTitle("👋 Welcome back!")
+                    .setDescription(`${message.author} is no longer AFK`)
+                    .addFields(
+                        { name: "AFK Reason", value: data.reason }
+                    )
+            ]
+        });
+    }
+    
     if (!message.content.startsWith(PREFIX)) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
@@ -111,13 +115,12 @@ client.on("messageCreate", async (message) => {
            COMMAND LIST
         ================================================= */
 
-        if (cmd === "commands") {
-            if (cmd === "afk" || cmd === "a") {
+        if (cmd === "afk" || cmd === "a") {
 
     const reason = args.join(" ") || "AFK";
 
     db.afk[message.author.id] = {
-        reason: reason,
+        reason,
         time: Date.now()
     };
 
