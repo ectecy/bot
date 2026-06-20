@@ -529,16 +529,12 @@ if (cmd === "unlock") {
 ================================================= */
 
 if (cmd === "hug") {
-    console.log("HUG COMMAND TRIGGERED");
+    console.log("HUG TRIGGERED");
 
-    const target =
-        message.mentions.members.first();
+    const target = message.mentions.members.first();
 
     if (!target)
         return message.reply("❌ Mention someone like: ,hug @user");
-
-    if (target.id === message.author.id)
-        return message.reply("🤗 You hug yourself... wholesome.");
 
     const gifs = [
         "https://images-ext-1.discordapp.net/external/_cgFjM_9UiGfG4IgQRlXbKFYYmHguUWhkbZlWw9pt2s/https/nekos.best/api/v2/hug/01b8d0bb-827b-49ed-a538-c109ee5883e1.gif",
