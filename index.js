@@ -74,16 +74,13 @@ if (!message.content) return;
 /* =========================================================
    💬 MESSAGE HANDLER
 ========================================================= */
-
 client.on("messageCreate", async (message) => {
     if (!message.guild || message.author.bot) return;
-
     // AFK RETURN (must be BEFORE prefix check)
     if (db.afk[message.author.id] && !message.content.startsWith(PREFIX)) {
     const data = db.afk[message.author.id];
     delete db.afk[message.author.id];
     saveDB();
-
     return message.channel.send({
         embeds: [
             new EmbedBuilder()
@@ -94,7 +91,6 @@ client.on("messageCreate", async (message) => {
         ]
     });
 }
-
     // PREFIX CHECK (ONLY ONCE)
     if (!message.content.startsWith(PREFIX)) return;
 
@@ -120,9 +116,7 @@ client.on("messageCreate", async (message) => {
         reason,
         time: Date.now()
     };
-
     saveDB();
-
     return message.channel.send({
         embeds: [
             new EmbedBuilder()
@@ -135,7 +129,6 @@ client.on("messageCreate", async (message) => {
         ]
     });
 }
-
             const embed = new EmbedBuilder()
                 .setColor("#5865F2")
                 .setTitle("📜 Command Center")
