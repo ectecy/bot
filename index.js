@@ -15,7 +15,8 @@ const PREFIX = ",";
 let db = {
     economy: {},
     warns: {},
-    xp: {}
+    xp: {},
+    afk: {}
 };
 
 if (fs.existsSync("./data.json")) {
@@ -71,8 +72,25 @@ client.once("ready", () => {
 ========================================================= */
 
 client.on("messageCreate", async (message) => {
-
     if (!message.guild || message.author.bot) return;
+    if (db.afk[message.author.id]) {
+
+    const data = db.afk[message.author.id];
+    delete db.afk[message.author.id];
+    saveDB();
+
+    return message.channel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Green")
+                .setTitle("👋 Welcome back!")
+                .setDescription(`${message.author} is no longer AFK`)
+                .addFields(
+                    { name: "AFK Reason", value: data.reason }
+                )
+        ]
+    });
+}
     if (!message.content.startsWith(PREFIX)) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
@@ -94,6 +112,29 @@ client.on("messageCreate", async (message) => {
         ================================================= */
 
         if (cmd === "commands") {
+            if (cmd === "afk" || cmd === "a") {
+
+    const reason = args.join(" ") || "AFK";
+
+    db.afk[message.author.id] = {
+        reason: reason,
+        time: Date.now()
+    };
+
+    saveDB();
+
+    return message.channel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Orange")
+                .setTitle("😴 AFK Enabled")
+                .setDescription(`${message.author} is now AFK`)
+                .addFields(
+                    { name: "Reason", value: reason }
+                )
+        ]
+    });
+}
 
             const embed = new EmbedBuilder()
                 .setColor("#5865F2")
