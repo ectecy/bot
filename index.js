@@ -529,9 +529,10 @@ if (cmd === "unlock") {
 ================================================= */
 
 if (cmd === "hug") {
+    console.log("HUG COMMAND TRIGGERED");
+
     const target =
-        message.mentions.members.first() ||
-        message.guild.members.cache.get(args[0]);
+        message.mentions.members.first();
 
     if (!target)
         return message.reply("❌ Mention someone like: ,hug @user");
