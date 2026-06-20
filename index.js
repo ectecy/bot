@@ -546,12 +546,14 @@ if (cmd === "hug") {
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
 
-    const embed = new EmbedBuilder()
-        .setColor("Pink")
-        .setDescription(`🤗 ${message.author} hugs ${target.user}`)
-        .setImage(gif);
-
-    return message.channel.send({ embeds: [embed] });
+    return message.channel.send({
+        embeds: [
+            new EmbedBuilder()
+                .setColor("Pink")
+                .setDescription(`🤗 ${message.author} hugs ${target.user}`)
+                .setImage(gif)
+        ]
+    });
 }
         
 if (cmd === "kiss") {
