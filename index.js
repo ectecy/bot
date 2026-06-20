@@ -531,8 +531,7 @@ if (cmd === "unlock") {
 if (cmd === "hug") {
 
     const target = message.mentions.members.first();
-    if (!target)
-        return message.reply("❌ Mention someone like: ,hug @user");
+    if (!target) return message.reply("❌ Mention someone like: ,hug @user");
 
     const gifs = [
         "https://media.tenor.com/4Y9x9qX1g2AAAAAC/anime-hug.gif",
@@ -555,25 +554,43 @@ if (cmd === "hug") {
 if (cmd === "kiss") {
 
     const target = message.mentions.members.first();
-    if (!target)
-        return message.reply("❌ Mention someone like: ,kiss @user");
+
+    if (!target) {
+        return message.reply({
+            content: "❌ Please mention someone to kiss.\nExample: ,kiss @user"
+        });
+    }
+
+    if (target.id === message.author.id) {
+        return message.reply("💀 You can't kiss yourself!");
+    }
+
+    if (target.user.bot) {
+        return message.reply("🤖 Bots don't need kisses!");
+    }
 
     const gifs = [
-        "https://media.tenor.com/3Yt5xkK8hQAAAAAC/anime-kiss.gif",
-        "https://media.tenor.com/9Ab2cX1pLmAAAAAC/kiss-anime.gif",
-        "https://media.tenor.com/2kQx8hZy0rAAAAAC/cute-kiss.gif"
+        "https://media.tenor.com/0m4Oy_Ijxw91S72KgCtOk_kiss.gif",
+        "https://media.tenor.com/a24dd374-kiss.gif",
+        "https://media.tenor.com/265e12ad-kiss.gif",
+        "https://media.tenor.com/7XqwsL8K9jMAAAAC/anime-kiss.gif",
+        "https://media.tenor.com/QM9Q4QbWlU8AAAAC/kiss-anime.gif"
     ];
 
     const gif = gifs[Math.floor(Math.random() * gifs.length)];
 
-    return message.channel.send({
-        embeds: [
-            new EmbedBuilder()
-                .setColor("Pink")
-                .setDescription(`💋 ${message.author} kisses ${target.user}`)
-                .setImage(gif)
-        ]
-    });
+    const embed = new EmbedBuilder()
+        .setColor("#FF69B4")
+        .setTitle("💋 Kiss!")
+        .setDescription(💖 ${message.author} kisses ${target.user}!)
+        .setImage(gif)
+        .setTimestamp()
+        .setFooter({
+            text: Requested by ${message.author.username},
+            iconURL: message.author.displayAvatarURL()
+        });
+
+    return message.channel.send({ embeds: [embed] });
 }
         
 if (cmd === "slap") {
