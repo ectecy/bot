@@ -545,8 +545,9 @@ if (cmd === "hug") {
 
     const embed = new EmbedBuilder()
         .setColor("Pink")
-        .setDescription(`🤗 ${message.author} hugs ${member.user}`)
-        .setImage(gif);
+        .setDescription(`🤗 ${message.author} hugs ${member.user} 💞`)
+        .setImage(gif)
+        .setTimestamp();
 
     return message.channel.send({ embeds: [embed] });
 }
@@ -568,8 +569,9 @@ if (cmd === "kiss") {
 
     const embed = new EmbedBuilder()
         .setColor("Pink")
-        .setDescription(`💋 ${message.author} kisses ${member.user}`)
-        .setImage(gif);
+        .setDescription(`💋 ${message.author} kisses ${member.user} 💕`)
+        .setImage(gif)
+        .setTimestamp();
 
     return message.channel.send({ embeds: [embed] });
 }
