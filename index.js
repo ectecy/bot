@@ -72,12 +72,10 @@ client.once("ready", () => {
 ========================================================= */
 
 client.on("messageCreate", async (message) => {
-
     if (!message.guild || message.author.bot) return;
 
-    // ✅ PUT AFK SYSTEM HERE (REPLACE OLD ONE)
+    // AFK RETURN (must be BEFORE prefix check)
     if (db.afk[message.author.id] && !message.content.startsWith(PREFIX)) {
-
         const data = db.afk[message.author.id];
         delete db.afk[message.author.id];
         saveDB();
@@ -88,26 +86,18 @@ client.on("messageCreate", async (message) => {
                     .setColor("Green")
                     .setTitle("👋 Welcome back!")
                     .setDescription(`${message.author} is no longer AFK`)
-                    .addFields(
-                        { name: "AFK Reason", value: data.reason }
-                    )
+                    .addFields({ name: "AFK Reason", value: data.reason })
             ]
         });
     }
 
-    // 👇 KEEP EVERYTHING BELOW EXACTLY THE SAME
-    if (!message.content.startsWith(PREFIX)) return;
-    
+    // PREFIX CHECK (ONLY ONCE)
     if (!message.content.startsWith(PREFIX)) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const cmd = (args.shift() || "").toLowerCase();
 
     const member = message.mentions.members.first();
-    const user = message.mentions.users.first();
-
-    try {
-
         /* =================================================
            XP GAIN
         ================================================= */
